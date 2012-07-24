@@ -19,7 +19,7 @@
 <html>
     <head>
 		<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-		<title>Game: the Gaming</title>
+		<title>LPC: Sorcerer's Garden</title>
 		<script type="text/javascript" src="./includes/crafty.js"></script>
 		<script type="text/javascript" src="./includes/raphael2.js"></script>
 		<script type="text/javascript" src="./includes/jQuery.js"></script>
@@ -67,8 +67,8 @@ var GAME_PROPS = {
 var g_playerProps = {
 	backpack: [],
 	pestleSlots: [],
-	spells: new Array(8),
-	//spells: [{ type: 'spell', name: 'fireball', count: 1 },{ type: 'spell', name: 'iceball', count: 1 }],
+	//spells: new Array(8),
+	spells: [{ type: 'spell', name: 'fireball', count: 1 },{ type: 'spell', name: 'iceball', count: 1 }],
 	selectedSpell: 1,
 };
 
@@ -95,10 +95,15 @@ function moveSpell(bolt, speed, frames, angle) {
 	var my = Math.sin(angle) * speed;
 	bolt.attr( { x: bolt.x + mx, y: bolt.y + my } );
 	if (bolt.hit('solid')) {
+		Crafty.e('2D, ' + RENDERING_MODE + ', explosion, Explosion')
+			.attr( { x: bolt.x, y: bolt.y, z: bolt.z })
+			.Explosion();
 		bolt.destroy();
 		return;
 	}
-	if (bolt.hit('Badguy')) {
+	var hitGuys = bolt.hit('Badguy');
+	if (hitGuys) {
+		hitGuys[0].obj.takeDamage(1);
 		bolt.destroy();
 		return;
 	}
@@ -107,6 +112,10 @@ function moveSpell(bolt, speed, frames, angle) {
 }
 		
 window.onload = function() {
+
+	var screenHeight = getParameterByName('height');
+	if (screenHeight)
+		VIEW_HEIGHT = screenHeight;
 
 	Crafty.init(VIEW_WIDTH, VIEW_HEIGHT);
 	doCraftyInitialization();
@@ -418,12 +427,25 @@ function doCraftyInitialization() {
 		
 		}
 	});
+
+	Crafty.c('Explosion', {
+
+		Explosion: function() {
+			this.requires("SpriteAnimation, Grid")
+			.animate("explode", [[0,0],[64,0],[128,0],[192,0],[0,192],[64,192],[128,192],[192,192]])
+			
+			this.animate("explode", 10, 1);
+			
+			return this;
+		}
+	});	
 	
 	Crafty.c('Badguy', {
 		_frameCount: 0,
 		_lastDirection: { x: 1, y: 0 },
+		hitpoints: 1,
 
-		Badguy: function() {
+		Badguy: function(hits) {
 			this.requires("SpriteAnimation, Grid, Multiway, Collision")
 			.collision()//new Crafty.polygon([20,48],[44,48],[44,64],[20,64]))
 			.animate("walk_left", 0, 1, 8)
@@ -470,7 +492,7 @@ function doCraftyInitialization() {
 			})
 			.bind('Moved', function(from) {
 				var solids = this.hit('solid');
-				if(solids && solids[0].normal) {
+				if (false) {//solids && solids[0].normal) {
 					this.attr({x: this.x - solids[0].normal.x, y: this.y - solids[0].normal.y });
 					return;
 				}
@@ -481,8 +503,17 @@ function doCraftyInitialization() {
 				this.attr( { z: 5 + Math.max(0,2 + (this.y + this.h)) * 10 });
 			})
 			
+			this.hitpoints = hits;
+			
 			return this;
+		},
+		takeDamage: function(amt) {
+			this.hitpoints = this.hitpoints - amt;
+			if (this.hitpoints <= 0) {
+				this.destroy();
+			}
 		}
+		
 	});
 	
 	Crafty.c('Player', {
@@ -649,7 +680,7 @@ function doCraftyInitialization() {
 					var mob = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, Badguy, ' + mobinfo.type)
 								.attr( { x: mobinfo.x, y: mobinfo.y, z: 5 + Math.max(0,2 + (this.y + this.h)) * 10 } )
 								.collision()
-								.Badguy();
+								.Badguy(2);
 				
 				}
 			}
@@ -668,7 +699,7 @@ function doCraftyInitialization() {
 						}
 						if (zone.type == 'S') {
 							startX = elZone.x + elZone.w/2 - (g_elPlayer ? g_elPlayer.w/2 : 0);
-							startY = elZone.y - (g_elPlayer ?g_elPlayer.h * 1.5 : 0);
+							startY = elZone.y - (g_elPlayer ? g_elPlayer.h * 1.5 : 0);
 						}
 					}
 				}
@@ -740,6 +771,9 @@ function doCraftyInitialization() {
 			Crafty.sprite(64, "./images/characters/BODY_skeleton.png", {
 				skeleton: [0, 0]
 			});
+			Crafty.sprite(64, "./images/spells/firelion_up_64.png", {
+				explosion: [0, 0]
+			});
 			Crafty.sprite(1, "./images/objects/plants.png", {
 				plant: [7 * 32, 0, 32, 64]
 			});
@@ -787,6 +821,17 @@ function loadMap(strMap) {
 		g_strZoneFrom = strMap;
 	});
 
+}
+
+function getParameterByName(name) {
+  name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+  var regexS = "[\\?&]" + name + "=([^&#]*)";
+  var regex = new RegExp(regexS);
+  var results = regex.exec(window.location.search);
+  if(results == null)
+    return "";
+  else
+    return decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
 // fix for Webkit browsers too fast
