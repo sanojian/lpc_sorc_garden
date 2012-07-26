@@ -47,9 +47,15 @@ var START_Y = 5;//MAP_HEIGHT - 4;
 var g_elPlayer;
 
 var SPELLS = {
-	fireball: { type: 'bolt', category: 'fire', speed: 10, duration: 30 },
-	iceball: { type: 'bolt', category: 'water', speed: 7, duration: 25 }
+	fireball: { type: 'bolt', category: 'fire', speed: 10, duration: 50 },
+	iceball: { type: 'bolt', category: 'water', speed: 7, duration: 35 },
+	stonecast: { type: 'bolt', category: 'earth', speed: 15, duration: 40 },
+	electrobolt: { type: 'bolt', category: 'wind', speed: 5, duration: 50 },
+	icestorm: { type: 'aoe', category: 'water', duration: 3000 }
+	
 };
+
+var SPELL_EFFECTS = {};
 
 var GAME_PROPS = {
 	LAYER_GROUND:		'Ground',
@@ -68,7 +74,7 @@ var g_playerProps = {
 	backpack: [],
 	pestleSlots: [],
 	//spells: new Array(8),
-	spells: [{ type: 'spell', name: 'fireball', count: 1 },{ type: 'spell', name: 'iceball', count: 1 }],
+	spells: [{ type: 'spell', name: 'fireball', count: 1 },{ type: 'spell', name: 'icestorm', count: 10 },{ type: 'spell', name: 'stonecast', count: 10 },{ type: 'spell', name: 'electrobolt', count: 10 }],
 	selectedSpell: 1,
 };
 
@@ -82,33 +88,49 @@ var g_hud = {
 				backpackCounters: [],
 				pestleSlotBackgrounds: [],
 				pestleSlotCounterbacks: [],
-				pestleSlotCounters: []
+				pestleSlotCounters: [],
+				spellCounterbacks: [],
+				spellCounters: []
 };
 
-function moveSpell(bolt, speed, frames, angle) {
+function getNextEffect(name, type) {
+	var num = SPELL_EFFECTS[name].counter
+	if (!SPELL_EFFECTS[name].elements[num])
+		SPELL_EFFECTS[name].elements[num] = Crafty.e('2D, ' + RENDERING_MODE + ', ' + name + ', ' + type + ', Persistant')
+												[type]();	
+	
+	SPELL_EFFECTS[name].counter = (SPELL_EFFECTS[name].counter + 1) % 10;	
+	return SPELL_EFFECTS[name].elements[num];
+}
+
+function moveBoltSpell(bolt, spell, frames, angle) {
 	
 	if (frames <=0) {
 		bolt.destroy();
 		return;
 	}
-	var mx = Math.cos(angle) * speed;
-	var my = Math.sin(angle) * speed;
-	bolt.attr( { x: bolt.x + mx, y: bolt.y + my } );
+	var mx = Math.cos(angle) * spell.speed;
+	var my = Math.sin(angle) * spell.speed;
+	bolt.attr( { x: bolt.x + mx, y: bolt.y + my, z: 5 + Math.max(0,2 + (bolt.y + bolt.h/2)) * 10 });
+
 	if (bolt.hit('solid')) {
-		Crafty.e('2D, ' + RENDERING_MODE + ', explosion, Explosion')
-			.attr( { x: bolt.x, y: bolt.y, z: bolt.z })
-			.Explosion();
+		var effect = getNextEffect(spell.category + '_explosion', 'Explosion');
+		effect.attr( { x: bolt.x - 64/2 + 16/2, y: bolt.y - 64/2 + 16/2, z: bolt.z })
+			.explode();
 		bolt.destroy();
 		return;
 	}
 	var hitGuys = bolt.hit('Badguy');
 	if (hitGuys) {
+		var effect = getNextEffect(spell.category + '_explosion', 'Explosion');
+		effect.attr( { x: hitGuys[0].obj.x, y: hitGuys[0].obj.y, z: bolt.z })
+			.explode();
 		hitGuys[0].obj.takeDamage(1);
 		bolt.destroy();
 		return;
 	}
 	
-	setTimeout(function() { moveSpell(bolt, speed, frames-1, angle); }, 20);
+	setTimeout(function() { moveBoltSpell(bolt, spell, frames-1, angle); }, 20);
 }
 		
 window.onload = function() {
@@ -136,16 +158,33 @@ window.onload = function() {
 			var craftyX = ev.pageX - pos.left - Crafty.viewport.x - 2;
 			var craftyY = ev.pageY - pos.top - Crafty.viewport.y - 2;
 			
-			
-			var bolt = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, ' + spell.name)
-				.attr( { x: g_elPlayer.x + 64/2, y: g_elPlayer.y + 64/2, z: g_elPlayer.z } )
-				.collision();
+			if (SPELLS[spell.name].type == 'bolt') {
 				
-			var dx = craftyX- 16/2 - bolt.x;
-			var dy = craftyY - 16/2 - bolt.y;
-			var angle = Math.atan2(dy, dx);
+				var bolt = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, ' + spell.name)
+					.attr( { x: g_elPlayer.x + 64/2, y: g_elPlayer.y + 64/2, z: g_elPlayer.z } )
+					.collision();
+					
+				var dx = craftyX- 16/2 - bolt.x;
+				var dy = craftyY - 16/2 - bolt.y;
+				var angle = Math.atan2(dy, dx);
 
-			moveSpell(bolt, SPELLS[spell.name].speed, SPELLS[spell.name].duration, angle);
+				moveBoltSpell(bolt, SPELLS[spell.name], SPELLS[spell.name].duration, angle);
+			}
+			else if (SPELLS[spell.name].type == 'aoe') {
+				var aoe = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, AOE_Spell, ' + spell.name)
+					.attr( { x: craftyX - 128/2, y: craftyY - 128/2, z: g_elPlayer.z } )
+					.AOE_Spell()
+					.collision();
+					
+				aoe.explode();
+				setTimeout(function() { aoe.destroy(); }, SPELLS[spell.name].duration);
+			}
+			
+			spell.count -= 1;
+			if (spell.count <= 0)
+				g_playerProps.spells[g_playerProps.selectedSpell-1] = undefined;
+			
+			reOrderSpells();
 		}
 	});
 	
@@ -260,20 +299,47 @@ window.onload = function() {
 	
 	g_hud.spellBackground = g_hud.raphPaper.image('./images/ui/spellBackground.png', VIEW_WIDTH/2 - 640/2, 10, 640, 64)
 								.attr( { opacity: 0.8 } );
+	// SPELL ICONS							
 	g_hud.setSpells = g_hud.raphPaper.set();
 	g_hud.icon_fireball = g_hud.raphPaper.image('./images/ui/spells/fireball.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
 							.attr( { title: 'fireball' } );
 	g_hud.icon_fireball.gameProps = {};
+	SPELL_EFFECTS.fire_explosion = { elements: [], counter: 0 };
+	g_hud.setSpells.push(g_hud.icon_fireball);
 	g_hud.icon_iceball = g_hud.raphPaper.image('./images/ui/spells/iceball.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
 							.attr( { title: 'iceball' } );
+	SPELL_EFFECTS.water_explosion = { elements: [], counter: 0 };
 	g_hud.icon_iceball.gameProps = {};
-	g_hud.setSpells.push(g_hud.icon_fireball);
 	g_hud.setSpells.push(g_hud.icon_iceball);
+	g_hud.setSpells.push(g_hud.icon_fireball);
+	g_hud.icon_stonecast = g_hud.raphPaper.image('./images/ui/spells/stonecast.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
+							.attr( { title: 'stonecast' } );
+	SPELL_EFFECTS.earth_explosion = { elements: [], counter: 0 };
+	g_hud.icon_stonecast.gameProps = {};
+	g_hud.setSpells.push(g_hud.icon_stonecast);
+	g_hud.icon_electrobolt = g_hud.raphPaper.image('./images/ui/spells/electrobolt.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
+							.attr( { title: 'electrobolt' } );
+	SPELL_EFFECTS.wind_explosion = { elements: [], counter: 0 };
+	g_hud.icon_electrobolt.gameProps = {};
+	g_hud.setSpells.push(g_hud.icon_electrobolt);
+	g_hud.icon_icestorm = g_hud.raphPaper.image('./images/ui/spells/icestorm.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
+							.attr( { title: 'icestorm' } );
+	SPELL_EFFECTS.wind_aoe = { elements: [], counter: 0 };
+	g_hud.icon_icestorm.gameProps = {};
+	g_hud.setSpells.push(g_hud.icon_icestorm);
+
 	g_hud.setSpells.hide();
 	
 	g_hud.spellHighlight = g_hud.raphPaper.rect(g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y,64, 64,2).attr( { stroke: '#ff0' });
+	g_hud.spellBling = g_hud.raphPaper.ellipse(0, 0, 24, 24).attr( { fill: '#fff', stroke: '#fff', opacity: 0 });
 	
 	for (var i=0;i<GAME_PROPS.MAX_SPELLS;i++) {
+		var elCounterBack = g_hud.raphPaper.rect(g_hud.spellBackground.attrs.x + 64*(i+1) + 64 - 18, g_hud.spellBackground.attrs.y + 64 - 22, 16, 16, 3)
+								.attr( { fill: '#aaa', opacity: 0.3 } );
+		var elCounter = g_hud.raphPaper.text(elCounterBack.attrs.x + elCounterBack.attrs.width/2, elCounterBack.attrs.y + elCounterBack.attrs.height/2, '0')
+							.attr( { "font-family": GAME_FONT, "font-size": 11 } );
+		g_hud.spellCounterbacks.push(elCounterBack);
+		g_hud.spellCounters.push(elCounter);
 		g_hud.raphPaper.text(g_hud.spellBackground.attrs.x + 64*(i+1.5), g_hud.spellBackground.attrs.y + g_hud.spellBackground.attrs.height/2, '' + (i+1))
 							.attr( { "font-family": GAME_FONT, "font-size": 32, opacity: 0.3 } );
 	}
@@ -302,11 +368,14 @@ function mixSpells() {
 			else if (item.plantType == 'zuchini')
 				spell.type = 'bolt';
 			else if (item.plantType == 'corn')
-				spell.type = 'particle';
+				spell.type = 'aoe';
 
 			g_playerProps.pestleSlots[i].count--;
-			if (g_playerProps.pestleSlots[i].count <= 0)
+			if (g_playerProps.pestleSlots[i].count <= 0) {
+				var icon = g_hud['icon_' + item.plantType];
+				icon.gameProps = {};
 				g_playerProps.pestleSlots[i] = undefined;
+			}
 
 		}
 		
@@ -317,22 +386,38 @@ function mixSpells() {
 			// look for spell in list
 			for (var i=0;i<g_playerProps.spells.length;i++) {
 				if (g_playerProps.spells[i] && g_playerProps.spells[i].name == name) {
-					g_playerProps.spells[i].count++;
+					g_hud.spellBling.attr( { cx: g_hud.pestle.attrs.x + g_hud.pestle.attrs.width/2, cy: g_hud.pestle.attrs.y + g_hud.pestle.attrs.height/4, opacity: 0.4 });
+					g_hud.spellBling.toFront();
+					g_hud.spellBling.animate( { cx: g_hud.spellBackground.attrs.x + 64 * (i + 1.5), cy: g_hud.spellBackground.attrs.y + 64/2 }, 600, '<>',
+						function() {
+							g_playerProps.spells[i].count++;
+							g_hud.spellBling.attr( { opacity: 0 });
+						});
+					
 					return;
 				}
 			}
 			// not found, look for blank space
 			for (var i=0;i<g_playerProps.spells.length;i++) {
 				if (!g_playerProps.spells[i]) {
-					g_playerProps.spells[i] = { type: 'spell', name: name, count: 1 }
+					g_hud.spellBling.attr( { cx: g_hud.pestle.attrs.x + g_hud.pestle.attrs.width/2, cy: g_hud.pestle.attrs.y + g_hud.pestle.attrs.height/4, opacity: 0.4 });
+					g_hud.spellBling.toFront();
+					g_hud.spellBling.animate( { cx: g_hud.spellBackground.attrs.x + 64 * (i + 1.5), cy: g_hud.spellBackground.attrs.y + 64/2 }, 600, '<>',
+						function() {
+							g_playerProps.spells[i] = { type: 'spell', name: name, count: 1 }
+							g_hud.spellBling.attr( { opacity: 0 });
+						});
 					return;
 				}
 			}
 		}
 	});
 
-	reOrderSpells();
-	reOrderBackpack();
+	setTimeout( function() {
+					reOrderSpells();
+					reOrderBackpack();
+				}, 700);
+		
 }
 
 function reOrderSpells() {
@@ -346,6 +431,13 @@ function reOrderSpells() {
 			icon.gameProps.loc = 'spells';
 			icon.gameProps.slot = i;
 			icon.show();		
+			g_hud.spellCounters[i].show();
+			g_hud.spellCounterbacks[i].show();
+			g_hud.spellCounters[i].attr( { text: g_playerProps.spells[i].count } );
+		}
+		else {
+			g_hud.spellCounters[i].hide();
+			g_hud.spellCounterbacks[i].hide();
 		}
 		
 	}
@@ -355,7 +447,7 @@ function reOrderSpells() {
 function reOrderBackpack() {
 	for (var i=0;i<GAME_PROPS.PLANT_TYPES.length;i++) {
 		g_hud.setBackpack.exclude(g_hud['icon_' + GAME_PROPS.PLANT_TYPES[i]]);
-	//	//g_hud['icon_' + GAME_PROPS.PLANT_TYPES[i]].hide();
+		//g_hud['icon_' + GAME_PROPS.PLANT_TYPES[i]].hide();
 	}
 	g_hud.setInvIcons.hide();
 	
@@ -428,15 +520,31 @@ function doCraftyInitialization() {
 		}
 	});
 
+	Crafty.c('AOE_Spell', {
+	
+		AOE_Spell: function() {
+			this.requires("SpriteAnimation, Grid")
+			.animate("explode", 0,0,5)
+			
+			return this;
+		},
+		explode: function() {
+			this.animate("explode", 20, 3);
+		}
+	});
+
 	Crafty.c('Explosion', {
 
 		Explosion: function() {
 			this.requires("SpriteAnimation, Grid")
-			.animate("explode", [[0,0],[64,0],[128,0],[192,0],[0,192],[64,192],[128,192],[192,192]])
-			
-			this.animate("explode", 10, 1);
+			.animate("explode", [[0,0],[1,0],[2,0],[3,0],[1,3],[2,3],[3,3]])
+			.attr( { x: this.x - 64/2 + 16/2, y: this.y - 64/2 + 16/2 } );
 			
 			return this;
+		},
+		explode: function() {
+			this.animate("explode", 10, 0);
+		
 		}
 	});	
 	
@@ -645,8 +753,8 @@ function doCraftyInitialization() {
 				}
 				this.attr( { z: 5 + Math.max(0,2 + (this.y + this.h)) * 10 });
 				//if (this._frameCount % 2 == 1) {	// speedup
-					Crafty.viewport.x = VIEW_WIDTH/2 - this.x;
-					Crafty.viewport.y = VIEW_HEIGHT/2 - this.y;
+					Crafty.viewport.x = VIEW_WIDTH/2 - this.x - this.w/2;
+					Crafty.viewport.y = VIEW_HEIGHT/2 - this.y - this.h/2;
 				//}
 				this._frameCount++;
 				
@@ -744,8 +852,8 @@ function doCraftyInitialization() {
 		g_elPlayer.attr({ x: startX, y: startY, z: 5 + startY * 10 });
 		g_elPlayer.bZoning = false;
 
-		Crafty.viewport.x = VIEW_WIDTH/2 - g_elPlayer.x;
-		Crafty.viewport.y = VIEW_HEIGHT/2 - g_elPlayer.y;
+		Crafty.viewport.x = VIEW_WIDTH/2 - g_elPlayer.x - g_elPlayer.w/2;
+		Crafty.viewport.y = VIEW_HEIGHT/2 - g_elPlayer.y - g_elPlayer.h/2;
 	});
 		
 
@@ -772,16 +880,28 @@ function doCraftyInitialization() {
 				skeleton: [0, 0]
 			});
 			Crafty.sprite(64, "./images/spells/firelion_up_64.png", {
-				explosion: [0, 0]
+				fire_explosion: [0, 0]
+			});
+			Crafty.sprite(64, "./images/spells/torrentacle_64.png", {
+				water_explosion: [0, 0]
+			});
+			Crafty.sprite(64, "./images/spells/rocks_explode.png", {
+				earth_explosion: [0, 0],
+				wind_explosion: [0, 0]
+			});
+			Crafty.sprite(128, "./images/spells/icestorm.png", {
+				icestorm: [0, 0]
 			});
 			Crafty.sprite(1, "./images/objects/plants.png", {
 				plant: [7 * 32, 0, 32, 64]
 			});
-			Crafty.sprite(16, "./images/spells/fireball.png", {
-				fireball: [0,0]
+			Crafty.sprite(16, "./images/spells/spells_bolt.png", {
+				fireball: [0,0],
+				iceball: [1,0],
+				stonecast: [2,0],
+				electrobolt: [3,0]
 			});
 			Crafty.sprite(16, "./images/spells/iceball.png", {
-				iceball: [0,0]
 			});
 
 			loadMap('river');
