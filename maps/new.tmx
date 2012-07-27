@@ -18,6 +18,9 @@
  <tileset firstgid="139" name="dirt" tilewidth="32" tileheight="32">
   <image source="../images/outdoors/dirt.png" width="96" height="192"/>
  </tileset>
+ <tileset firstgid="157" name="mob_tiles" tilewidth="32" tileheight="32">
+  <image source="../images/creatures/mob_tiles.png" width="128" height="128"/>
+ </tileset>
  <layer name="Ground" width="24" height="24">
   <data>
    <tile gid="156"/>
@@ -2921,6 +2924,53 @@
  <objectgroup name="Zones" width="24" height="24">
   <object name="river" type="S" x="170" y="738">
    <polygon points="0,0 0,26 125,28 124,4"/>
+  </object>
+ </objectgroup>
+ <objectgroup name="MOBs" width="24" height="24">
+  <object name="brittle skeleton" type="skeleton" gid="157" x="220" y="147">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="157" x="220" y="147">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="157" x="277" y="144">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="157" x="266" y="197">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="157" x="331" y="188">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="157" x="337" y="130">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="157" x="404" y="204">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="157" x="301" y="390">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="157" x="304" y="459">
+   <properties>
+    <property name="hits" value="10"/>
+   </properties>
   </object>
  </objectgroup>
 </map>

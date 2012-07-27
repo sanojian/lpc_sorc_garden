@@ -94,6 +94,134 @@
          "width":24,
          "x":0,
          "y":0
+        }, 
+        {
+         "height":24,
+         "name":"MOBs",
+         "objects":[
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":220,
+                 "y":147
+                }, 
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":220,
+                 "y":147
+                }, 
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":277,
+                 "y":144
+                }, 
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":266,
+                 "y":197
+                }, 
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":331,
+                 "y":188
+                }, 
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":337,
+                 "y":130
+                }, 
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":404,
+                 "y":204
+                }, 
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":301,
+                 "y":390
+                }, 
+                {
+                 "gid":157,
+                 "height":0,
+                 "name":"brittle skeleton",
+                 "properties":
+                    {
+                     "hits":"10"
+                    },
+                 "type":"skeleton",
+                 "width":0,
+                 "x":304,
+                 "y":459
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "width":24,
+         "x":0,
+         "y":0
         }],
  "orientation":"orthogonal",
  "properties":
@@ -184,6 +312,21 @@
          "imagewidth":96,
          "margin":0,
          "name":"dirt",
+         "properties":
+            {
+
+            },
+         "spacing":0,
+         "tileheight":32,
+         "tilewidth":32
+        }, 
+        {
+         "firstgid":157,
+         "image":"..\/images\/creatures\/mob_tiles.png",
+         "imageheight":128,
+         "imagewidth":128,
+         "margin":0,
+         "name":"mob_tiles",
          "properties":
             {
 

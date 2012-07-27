@@ -853,7 +853,7 @@ function doCraftyInitialization() {
 					var mob = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, Badguy, ' + mobinfo.type)
 								.attr( { x: mobinfo.x, y: mobinfo.y, z: 5 + Math.max(0,2 + (this.y + this.h)) * 10 } )
 								.collision()
-								.Badguy(2);
+								.Badguy(mobinfo.properties.hits);
 				
 				}
 			}
