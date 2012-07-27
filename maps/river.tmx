@@ -7536,7 +7536,7 @@
    <tile gid="228"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="247"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -7632,9 +7632,9 @@
    <tile gid="224"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="264"/>
+   <tile gid="265"/>
+   <tile gid="266"/>
    <tile gid="226"/>
    <tile gid="221"/>
    <tile gid="221"/>
@@ -16761,7 +16761,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="245"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -23119,7 +23119,30 @@
   </object>
  </objectgroup>
  <objectgroup name="MOBs" width="96" height="48">
-  <object name="brittle skeleton" type="skeleton" gid="484" x="985" y="860"/>
-  <object name="brittle skeleton" type="skeleton" gid="484" x="787" y="1124"/>
+  <object name="brittle skeleton" type="skeleton" gid="484" x="1005" y="855">
+   <properties>
+    <property name="hits" value="1"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="484" x="787" y="1124">
+   <properties>
+    <property name="hits" value="1"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="484" x="1000" y="924">
+   <properties>
+    <property name="hits" value="1"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="484" x="1024" y="979">
+   <properties>
+    <property name="hits" value="1"/>
+   </properties>
+  </object>
+  <object name="brittle skeleton" type="skeleton" gid="484" x="974" y="892">
+   <properties>
+    <property name="hits" value="1"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>
