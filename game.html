@@ -72,6 +72,7 @@ var GAME_PROPS = {
 	PLANT_TYPES: 		[ 'tomato', 'potato', 'carrot', 'artichoke', 'pepper', 'zuchini', 'corn' ],
 	BACKPACK_SLOTS:		10,
 	MAX_SPELLS:			8,
+	MAX_HEALTH:			5
 }
 var g_playerProps = {
 	backpack: [],
@@ -91,7 +92,7 @@ var g_playerProps = {
 
 
 var g_map;
-var g_strZoneFrom = 'new';
+var g_strZoneFrom = 'churchyard';
 var g_hud = { 
 				visible: false,
 				backpackBackgrounds: [],
@@ -101,7 +102,8 @@ var g_hud = {
 				pestleSlotCounterbacks: [],
 				pestleSlotCounters: [],
 				spellCounterbacks: [],
-				spellCounters: []
+				spellCounters: [],
+				hearts: []
 };
 
 function getNextEffect(name, type) {
@@ -396,6 +398,10 @@ window.onload = function() {
 	}
 	
 	reOrderSpells();
+	
+	for (var i=0;i<GAME_PROPS.MAX_HEALTH;i++) {
+		g_hud.hearts[i] = g_hud.raphPaper.image('./images/ui/heart.png', 22 + 34*i, 28, 32, 32);
+	}
 };		
 
 function mixSpells() {
@@ -469,6 +475,15 @@ function mixSpells() {
 					reOrderBackpack();
 				}, 700);
 		
+}
+
+function updateHealthUI(health) {
+	for (var i=0;i<GAME_PROPS.MAX_HEALTH;i++) {
+		var bShow = false;
+		if (i+1 <= health)
+			bShow = true;
+		g_hud.hearts[i].attr( { opacity: (bShow ? 1 : 0.4) });
+	}
 }
 
 function reOrderSpells() {
@@ -615,7 +630,10 @@ function doCraftyInitialization() {
 	Crafty.c('Badguy', {
 		_frameCount: 0,
 		_lastDirection: { x: 1, y: 0 },
+		topSpeed: 2,
 		hitpoints: 1,
+		lastAttack: 0,
+		attackSpeed: 2000,
 
 		Badguy: function(hits) {
 			this.requires("SpriteAnimation, Grid, Multiway, Collision")
@@ -654,12 +672,19 @@ function doCraftyInitialization() {
 				if (Math.abs(xDiff) < 240 && Math.abs(yDiff) < 240) {
 					var direction = { x: xDiff ? Math.abs(xDiff) / (xDiff) : 0, y: yDiff ? Math.abs(yDiff) / (yDiff) : 0 };
 					this.trigger("NewDirection", direction);
-					this.x += direction.x;
-					this.y += direction.y;
-					this.trigger("Moved", { x: this.x - direction.x, y: this.y - direction.y } );
+					this.x += direction.x * this.topSpeed;
+					this.y += direction.y * this.topSpeed;
+					this.trigger("Moved", { x: this.x - direction.x * this.topSpeed, y: this.y - direction.y * this.topSpeed } );
 				}
 				else
 					this.stop();
+					
+				var dNow = (new Date()).getTime();	
+				if (dNow - this.lastAttack >= this.attackSpeed && Math.abs(xDiff) < 32 && Math.abs(yDiff) < 32) {
+					// attack!
+					g_elPlayer.changeHealth(-1);
+					this.lastAttack = dNow;
+				}
 			
 			})
 			.bind('Moved', function(from) {
@@ -693,6 +718,7 @@ function doCraftyInitialization() {
 		_frameCount: 0,
 		_lastDirection: { x: 1, y: 0 },
 		bZoning: false,
+		health: GAME_PROPS.MAX_HEALTH,
 
 		Player: function() {
 			this.requires("SpriteAnimation, Grid, Multiway, Collision")
@@ -826,6 +852,21 @@ function doCraftyInitialization() {
 			});
 
 			return this;
+		},
+		changeHealth: function(amt) {
+			if (this.health <= 0)
+				return;		// already dead
+			this.health = Math.max(0, Math.min(GAME_PROPS.MAX_HEALTH, this.health + amt));
+			showDamage(amt, this, (amt > 0 ? '#0f0' : '#f00'));
+
+			updateHealthUI(this.health);
+			if (this.health <= 0) {
+				// dead!
+				g_strZoneFrom = 'river';
+				loadMap('home');
+				this.health = 2;
+				updateHealthUI(this.health);
+			}
 		}
 	
 	});
