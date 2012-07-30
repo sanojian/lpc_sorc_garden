@@ -47,14 +47,14 @@ var START_Y = 5;//MAP_HEIGHT - 4;
 var g_elPlayer;
 
 var SPELLS = {
-	fireball: { type: 'bolt', category: 'fire', speed: 10, damage: 2, duration: 50 },
-	iceball: { type: 'bolt', category: 'water', speed: 7, damage: 1, duration: 35 },
-	stonecast: { type: 'bolt', category: 'earth', speed: 15, damage: 2, duration: 40 },
-	electrobolt: { type: 'bolt', category: 'wind', speed: 5, damage: 1, duration: 50 },
-	firestorm: { type: 'aoe', category: 'fire', damage: 2, duration: 3000 },
-	icestorm: { type: 'aoe', category: 'water', damage: 1, duration: 3000 },
-	earthquake: { type: 'aoe', category: 'earth', damage: 1, duration: 3000 },
-	windstorm: { type: 'aoe', category: 'wind', damage: 1, duration: 3000 },
+	fireball: { type: 'bolt', category: 'fire', speed: 10, damage: 2, duration: 50, amount: 3 },
+	iceball: { type: 'bolt', category: 'water', speed: 7, damage: 1, duration: 35, effect: 'slow', amount: 3 },
+	stonecast: { type: 'bolt', category: 'earth', speed: 15, damage: 2, duration: 40, amount: 3 },
+	electrobolt: { type: 'bolt', category: 'wind', speed: 5, damage: 1, duration: 50, effect: 'push', amount: 3 },
+	firestorm: { type: 'aoe', category: 'fire', damage: 2, duration: 3000, amount: 1 },
+	icestorm: { type: 'aoe', category: 'water', damage: 1, duration: 3000, effect: 'slow', amount: 1 },
+	earthquake: { type: 'aoe', category: 'earth', damage: 1, duration: 3000, effect: 'root', amount: 1 },
+	windstorm: { type: 'aoe', category: 'wind', damage: 1, duration: 3000, effect: 'push', amount: 1 },
 	
 };
 
@@ -93,6 +93,8 @@ var g_playerProps = {
 
 var g_map;
 var g_strZoneFrom = 'churchyard';
+var g_strCurZone;
+var g_musicMute = false;
 var g_hud = { 
 				visible: false,
 				backpackBackgrounds: [],
@@ -155,7 +157,8 @@ function moveBoltSpell(bolt, spell, frames, angle) {
 		var effect = getNextEffect(spell.category + '_explosion', 'Explosion');
 		effect.attr( { x: hitGuys[0].obj.x, y: hitGuys[0].obj.y, z: bolt.z })
 			.explode(spell.category);
-		hitGuys[0].obj.takeDamage(spell.damage);
+		hitGuys[0].obj.applySpellEffect(spell.effect);
+		hitGuys[0].obj.changeHealth(0-spell.damage);
 		bolt.destroy();
 		return;
 	}
@@ -385,6 +388,8 @@ window.onload = function() {
 	
 	g_hud.spellHighlight = g_hud.raphPaper.rect(g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y,64, 64,2).attr( { stroke: '#ff0' });
 	g_hud.spellBling = g_hud.raphPaper.ellipse(0, 0, 24, 24).attr( { fill: '#fff', stroke: '#fff', opacity: 0 });
+	g_hud.mixFail1 = g_hud.raphPaper.image('./images/spells/mix_fail1.png', 0, 0, 96, 96).attr( { opacity: 0 });
+	g_hud.mixFail2 = g_hud.raphPaper.image('./images/spells/mix_fail2.png', 0, 0, 96, 96).attr( { opacity: 0 });
 	
 	for (var i=0;i<GAME_PROPS.MAX_SPELLS;i++) {
 		var elCounterBack = g_hud.raphPaper.rect(g_hud.spellBackground.attrs.x + 64*(i+1) + 64 - 18, g_hud.spellBackground.attrs.y + 64 - 22, 16, 16, 3)
@@ -402,7 +407,23 @@ window.onload = function() {
 	for (var i=0;i<GAME_PROPS.MAX_HEALTH;i++) {
 		g_hud.hearts[i] = g_hud.raphPaper.image('./images/ui/heart.png', 22 + 34*i, 28, 32, 32);
 	}
+	
+	var y = 0;
+	g_hud.helpText = g_hud.raphPaper.set();
+	g_hud.helpText.push(g_hud.raphPaper.text(VIEW_WIDTH - 200, VIEW_HEIGHT/2 - 200 + (32*y++), "SORCERER'S GARDEN").attr( { "font-family": GAME_FONT, "font-size": 16, fill: '#ff0' } ));
+	g_hud.helpText.push(g_hud.raphPaper.text(VIEW_WIDTH - 200, VIEW_HEIGHT/2 - 200 + (32*y++), "move - w a s d").attr( { "font-family": GAME_FONT, "font-size": 16, fill: '#ff0' } ));
+	g_hud.helpText.push(g_hud.raphPaper.text(VIEW_WIDTH - 200, VIEW_HEIGHT/2 - 200 + (32*y++), "choose spell - 1-8").attr( { "font-family": GAME_FONT, "font-size": 16, fill: '#ff0' } ));
+	g_hud.helpText.push(g_hud.raphPaper.text(VIEW_WIDTH - 200, VIEW_HEIGHT/2 - 200 + (32*y++), "cast spell - mouse click").attr( { "font-family": GAME_FONT, "font-size": 16, fill: '#ff0' } ));
+	g_hud.helpText.push(g_hud.raphPaper.text(VIEW_WIDTH - 200, VIEW_HEIGHT/2 - 200 + (32*y++), "plant/pick - p").attr( { "font-family": GAME_FONT, "font-size": 16, fill: '#ff0' } ));
+	g_hud.helpText.push(g_hud.raphPaper.text(VIEW_WIDTH - 200, VIEW_HEIGHT/2 - 200 + (32*y++), "inventory - i").attr( { "font-family": GAME_FONT, "font-size": 16, fill: '#ff0' } ));
+	g_hud.helpText.push(g_hud.raphPaper.text(VIEW_WIDTH - 200, VIEW_HEIGHT/2 - 200 + (32*y++), "mute music - m").attr( { "font-family": GAME_FONT, "font-size": 16, fill: '#ff0' } ));
+	g_hud.helpText.hide();
 };		
+
+function showHelpText() {
+	g_hud.helpText.show();
+	setTimeout( function() { g_hud.helpText.hide(); }, 4000);
+}
 
 function mixSpells() {
 
@@ -438,16 +459,19 @@ function mixSpells() {
 		
 	}
 	
+	var bMixed = false;
 	$.each(SPELLS, function(name, item) {
 		if (spell.type == item.type && spell.category == item.category) {
+			bMixed = true;
 			// look for spell in list
 			for (var i=0;i<g_playerProps.spells.length;i++) {
 				if (g_playerProps.spells[i] && g_playerProps.spells[i].name == name) {
 					g_hud.spellBling.attr( { cx: g_hud.pestle.attrs.x + g_hud.pestle.attrs.width/2, cy: g_hud.pestle.attrs.y + g_hud.pestle.attrs.height/4, opacity: 0.4 });
 					g_hud.spellBling.toFront();
+					Crafty.audio.play('mix_spell');
 					g_hud.spellBling.animate( { cx: g_hud.spellBackground.attrs.x + 64 * (i + 1.5), cy: g_hud.spellBackground.attrs.y + 64/2 }, 600, '<>',
 						function() {
-							g_playerProps.spells[i].count++;
+							g_playerProps.spells[i].count+= item.amount;
 							g_hud.spellBling.attr( { opacity: 0 });
 						});
 					
@@ -461,7 +485,7 @@ function mixSpells() {
 					g_hud.spellBling.toFront();
 					g_hud.spellBling.animate( { cx: g_hud.spellBackground.attrs.x + 64 * (i + 1.5), cy: g_hud.spellBackground.attrs.y + 64/2 }, 600, '<>',
 						function() {
-							g_playerProps.spells[i] = { type: 'spell', name: name, count: 1 }
+							g_playerProps.spells[i] = { type: 'spell', name: name, count: item.amount }
 							g_hud.spellBling.attr( { opacity: 0 });
 						});
 					return;
@@ -469,12 +493,33 @@ function mixSpells() {
 			}
 		}
 	});
+	
+	if (!bMixed) {
+		g_hud.mixFail1.attr( { x: g_hud.pestle.attrs.x + g_hud.pestle.attrs.width/2 - g_hud.mixFail1.attrs.width/2, y: g_hud.pestle.attrs.y + g_hud.pestle.attrs.height/2 - g_hud.mixFail1.attrs.height, opacity: 0.4 });
+		g_hud.mixFail2.attr( { x: g_hud.pestle.attrs.x + g_hud.pestle.attrs.width/2 - g_hud.mixFail2.attrs.width/2, y: g_hud.pestle.attrs.y + g_hud.pestle.attrs.height/2 - g_hud.mixFail2.attrs.height, opacity: 0 });
+		g_hud.spellBling.toFront();
+		Crafty.audio.play('mix_fail');
+		animateMixFail(5);
+		
+	}
 
 	setTimeout( function() {
 					reOrderSpells();
 					reOrderBackpack();
 				}, 700);
 		
+}
+
+function animateMixFail(duration) {
+	if (duration <= 0) {
+		g_hud.mixFail1.attr( { opacity: 0 } );
+		g_hud.mixFail2.attr( { opacity: 0 } );
+		return;
+	}
+		
+	g_hud.mixFail1.attr( { opacity: (duration % 2 ? 0.4 : 0) } );
+	g_hud.mixFail2.attr( { opacity: (duration % 2 ? 0 : 0.4) } );
+	setTimeout( function() { animateMixFail(duration - 1); }, 150);
 }
 
 function updateHealthUI(health) {
@@ -605,9 +650,11 @@ function doCraftyInitialization() {
 		explode: function(spell) {
 			Crafty.audio.play(spell.category + '_explosion');
 			
-			var objHit = this.hit('Badguy');
-			for (var i=0;i<objHit.length;i++)
-				objHit[i].obj.takeDamage(spell.damage);
+			var objHit = this.hit('damagable');
+			for (var i=0;i<objHit.length;i++) {
+				objHit[i].obj.applySpellEffect(spell.effect);
+				objHit[i].obj.changeHealth(0-spell.damage);
+			}
 			
 		}
 	});
@@ -633,29 +680,30 @@ function doCraftyInitialization() {
 		topSpeed: 2,
 		hitpoints: 1,
 		lastAttack: 0,
+		bAttacking: false,
 		attackSpeed: 2000,
 
 		Badguy: function(hits) {
-			this.requires("SpriteAnimation, Grid, Multiway, Collision")
+			this.requires("SpriteAnimation, Grid, Collision, damagable")
 			.collision()//new Crafty.polygon([20,48],[44,48],[44,64],[20,64]))
 			.animate("walk_left", 0, 1, 8)
 			.animate("walk_right", 0, 3, 8)
 			.animate("walk_up", 0, 0, 8)
 			.animate("walk_down", 0, 2, 8)
 			.bind("NewDirection", function (direction) {
-				if (direction.y < 0) {
+				if (direction.y < 0 && Math.abs(direction.y) > this.topSpeed) {
 					if (!this.isPlaying("walk_up"))
 						this.stop().animate("walk_up", 10, -1);
 				}
-				else if (direction.y > 0) {
+				else if (direction.y > 0 && Math.abs(direction.y) > this.topSpeed) {
 					if (!this.isPlaying("walk_down"))
 						this.stop().animate("walk_down", 10, -1);
 				}
-				else if (direction.x < 0) {
+				else if (direction.x < this.topSpeed) {
 					if (!this.isPlaying("walk_left"))
 						this.stop().animate("walk_left", 10, -1);
 				}
-				else if (direction.x > 0) {
+				else if (direction.x > this.topSpeed) {
 					if (!this.isPlaying("walk_right"))
 						this.stop().animate("walk_right", 10, -1);
 				}
@@ -667,11 +715,13 @@ function doCraftyInitialization() {
 				}
 			})
 			.bind("EnterFrame", function () {
+				if (this.bAttacking)
+					return;
 				var xDiff = g_elPlayer.x - this.x - (this.w - g_elPlayer.w)/2;
 				var yDiff = g_elPlayer.y - this.y - 3*(this.h - g_elPlayer.h)/4;
-				if (Math.abs(xDiff) < 240 && Math.abs(yDiff) < 240) {
+				if (Math.abs(xDiff) < 340 && Math.abs(yDiff) < 340) {
 					var direction = { x: xDiff ? Math.abs(xDiff) / (xDiff) : 0, y: yDiff ? Math.abs(yDiff) / (yDiff) : 0 };
-					this.trigger("NewDirection", direction);
+					this.trigger("NewDirection", { x: xDiff, y: yDiff } );
 					this.x += direction.x * this.topSpeed;
 					this.y += direction.y * this.topSpeed;
 					this.trigger("Moved", { x: this.x - direction.x * this.topSpeed, y: this.y - direction.y * this.topSpeed } );
@@ -682,8 +732,11 @@ function doCraftyInitialization() {
 				var dNow = (new Date()).getTime();	
 				if (dNow - this.lastAttack >= this.attackSpeed && Math.abs(xDiff) < 32 && Math.abs(yDiff) < 32) {
 					// attack!
+					this.bAttacking = true;
 					g_elPlayer.changeHealth(-1);
 					this.lastAttack = dNow;
+					var self = this;
+					setTimeout( function() { self.bAttacking = false; }, 1000);
 				}
 			
 			})
@@ -704,12 +757,35 @@ function doCraftyInitialization() {
 			
 			return this;
 		},
-		takeDamage: function(amt) {
-			this.hitpoints = this.hitpoints - amt;
+		changeHealth: function(amt) {
+			this.hitpoints = parseInt(this.hitpoints, 10) + amt;
 			showDamage(amt, this, '#f00');
 			if (this.hitpoints <= 0) {
 				this.destroy();
 			}
+		},
+		applySpellEffect: function(effect) {
+			if (effect == 'slow')
+				this.topSpeed = 1;
+			else if (effect == 'root' && !this.bRooted) {
+				this.bRooted = true;
+				var oldSpeed = this.topSpeed;
+				var self = this;
+				self.topSpeed = 0;
+				setTimeout( function() { self.topSpeed = oldSpeed; self.bRooted = false; }, 4000);
+			}
+			else if (effect == 'push') {
+				var xDiff = g_elPlayer.x - this.x - (this.w - g_elPlayer.w)/2;
+				var yDiff = g_elPlayer.y - this.y - 3*(this.h - g_elPlayer.h)/4;
+				var angle =  Math.atan2(yDiff, xDiff);
+				var mx = Math.cos(angle) * 64;
+				var my = Math.sin(angle) * 64;
+				this.x = this.x - mx;
+				this.y = this.y - my;
+				this.trigger('Moved', { x: this.x + mx, y: this.y + my } );
+				
+			}
+				
 		}
 		
 	});
@@ -721,7 +797,7 @@ function doCraftyInitialization() {
 		health: GAME_PROPS.MAX_HEALTH,
 
 		Player: function() {
-			this.requires("SpriteAnimation, Grid, Multiway, Collision")
+			this.requires("SpriteAnimation, damagable, Grid, Multiway, Collision")
 			.collision(new Crafty.polygon([20,48],[44,48],[44,64],[20,64]))
 			.animate("walk_left", 0, 1, 8)
 			.animate("walk_right", 0, 3, 8)
@@ -784,6 +860,12 @@ function doCraftyInitialization() {
 					g_hud.spellHighlight.attr( { x: g_hud.spellBackground.attrs.x + 64*8 } );
 					g_playerProps.selectedSpell = 8;
 				}
+				else if (e.keyCode == Crafty.keys['M']) {
+					Crafty.audio.stop();
+					g_musicMute = !g_musicMute;
+					if (!g_musicMute)
+						Crafty.audio.play('music_' + g_strCurZone, 100, 0.6);
+				}
 				else if (e.keyCode == Crafty.keys.P) {
 					var plants = this.hit('Plant');
 					if (plants) {
@@ -791,9 +873,10 @@ function doCraftyInitialization() {
 							var icon = g_hud['icon_' + GAME_PROPS.PLANT_TYPES[plants[0].obj.plantType]];
 							if (icon.gameProps.loc) {
 								g_playerProps[icon.gameProps.loc][icon.gameProps.slot].count++;
-									plants[0].obj.destroy();
-									reOrderBackpack();
-									return;								
+								Crafty.audio.play('pick');
+								plants[0].obj.destroy();
+								reOrderBackpack();
+								return;								
 							}
 														
 							// put it in inventory
@@ -820,6 +903,8 @@ function doCraftyInitialization() {
 						Crafty.e('2D, ' + RENDERING_MODE + ', Plant, plant')
 							.attr( { x: x, y: y, z: 2 } )
 							.Plant(Math.floor(Math.random()*7));
+						Crafty.audio.play('dig');
+
 					}
 				}
 				else if (e.keyCode == Crafty.keys.I) {
@@ -829,6 +914,10 @@ function doCraftyInitialization() {
 						g_hud.setBackpack.show();
 					g_hud.visible = !g_hud.visible;
 				}
+				else if (e.keyCode == Crafty.keys.W || e.keyCode == Crafty.keys.A || e.keyCode == Crafty.keys.S || e.keyCode == Crafty.keys.D)
+					return; 	// movement
+				else 
+					showHelpText();
 			})
 			.bind('Moved', function(from) {
 				if (this.bZoning)
@@ -858,6 +947,9 @@ function doCraftyInitialization() {
 				return;		// already dead
 			this.health = Math.max(0, Math.min(GAME_PROPS.MAX_HEALTH, this.health + amt));
 			showDamage(amt, this, (amt > 0 ? '#0f0' : '#f00'));
+			
+			if (amt < 0)
+				Crafty.audio.play('hit_hurt');
 
 			updateHealthUI(this.health);
 			if (this.health <= 0) {
@@ -873,7 +965,6 @@ function doCraftyInitialization() {
 	
 	
 	Crafty.scene("main", function () {
-		//Crafty.background("#2F8136");
 
 		Crafty.background("#333333");		
 		
@@ -960,11 +1051,13 @@ function doCraftyInitialization() {
 
 		Crafty.viewport.x = VIEW_WIDTH/2 - g_elPlayer.x - g_elPlayer.w/2;
 		Crafty.viewport.y = VIEW_HEIGHT/2 - g_elPlayer.y - g_elPlayer.h/2;
-	});
 		
+		Crafty.audio.stop();
+		if (!g_musicMute)
+			Crafty.audio.play('music_' + g_strCurZone, 100, 0.6);
 
-	
-	
+	});
+			
 	
 	Crafty.scene("loading", function () {
 		Crafty.background("#000");
@@ -1028,6 +1121,18 @@ function doCraftyInitialization() {
 			Crafty.audio.add('earth_explosion', './audio/earth_explosion.wav');
 			Crafty.audio.add('wind_explosion', './audio/wind_explosion.wav');
 
+			Crafty.audio.add('mix_spell', './audio/mix_spell.wav');
+			Crafty.audio.add('mix_fail', './audio/mix_fail.wav');
+			Crafty.audio.add('hit_hurt', './audio/Hit_Hurt5.wav');
+			Crafty.audio.add('dig', './audio/dig.wav');
+			Crafty.audio.add('pick', './audio/pick.wav');
+
+			Crafty.audio.add('music_river', './audio/music/Crystal Dungeon v1_0.mp3');
+			Crafty.audio.add('music_churchyard', './audio/music/Avgvst - Byzantine (loop)_0.mp3');
+			Crafty.audio.add('music_home', './audio/music/flora.ogg');
+			Crafty.audio.add('music_church', './audio/music/fauna.ogg');
+
+			
 			loadMap('river');
 
 		});	
@@ -1059,6 +1164,7 @@ function loadMap(strMap) {
 		
 		g_map = data;
 		
+		g_strCurZone = strMap;
 		
 		Crafty.scene("main"); //when everything is loaded, run the main scene
 		

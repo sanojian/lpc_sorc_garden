@@ -87,6 +87,35 @@
                  "width":0,
                  "x":174,
                  "y":1497
+                }, 
+                {
+                 "height":0,
+                 "name":"church",
+                 "polygon":[
+                        {
+                         "x":0,
+                         "y":0
+                        }, 
+                        {
+                         "x":0,
+                         "y":41
+                        }, 
+                        {
+                         "x":73,
+                         "y":41
+                        }, 
+                        {
+                         "x":75,
+                         "y":0
+                        }],
+                 "properties":
+                    {
+
+                    },
+                 "type":"N",
+                 "width":0,
+                 "x":1597,
+                 "y":377
                 }],
          "opacity":1,
          "type":"objectgroup",

@@ -15414,6 +15414,9 @@
   <object name="river" type="S" x="174" y="1497">
    <polygon points="0,0 252,-1 252,34 0,36"/>
   </object>
+  <object name="church" type="N" x="1597" y="377">
+   <polygon points="0,0 0,41 73,41 75,0"/>
+  </object>
  </objectgroup>
  <objectgroup name="MOBs" width="64" height="48">
   <object name="skeleton" type="skeleton" gid="367" x="639" y="1024">
