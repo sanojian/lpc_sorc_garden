@@ -12,6 +12,9 @@
  <tileset firstgid="217" name="inside" tilewidth="32" tileheight="32">
   <image source="../images/indoors/inside.png" width="320" height="320"/>
  </tileset>
+ <tileset firstgid="317" name="mob_tiles" tilewidth="32" tileheight="32">
+  <image source="../images/creatures/mob_tiles.png" width="128" height="128"/>
+ </tileset>
  <layer name="Ground" width="32" height="24">
   <data>
    <tile gid="0"/>
@@ -3872,6 +3875,18 @@
    <tile gid="0"/>
   </data>
  </layer>
+ <objectgroup name="MOBs" width="32" height="24">
+  <object name="acoloyte" type="skeleton_mage" gid="317" x="94" y="201">
+   <properties>
+    <property name="hits" value="20"/>
+   </properties>
+  </object>
+  <object name="acoloyte" type="skeleton_mage" gid="317" x="896" y="195">
+   <properties>
+    <property name="hits" value="20"/>
+   </properties>
+  </object>
+ </objectgroup>
  <objectgroup name="Zones" width="32" height="24">
   <object name="churchyard" type="S" x="444" y="694">
    <polygon points="0,0 141,-1 138,53 -16,55"/>

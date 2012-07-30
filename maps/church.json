@@ -57,6 +57,43 @@
         }, 
         {
          "height":24,
+         "name":"MOBs",
+         "objects":[
+                {
+                 "gid":317,
+                 "height":0,
+                 "name":"acoloyte",
+                 "properties":
+                    {
+                     "hits":"20"
+                    },
+                 "type":"skeleton_mage",
+                 "width":0,
+                 "x":94,
+                 "y":201
+                }, 
+                {
+                 "gid":317,
+                 "height":0,
+                 "name":"acoloyte",
+                 "properties":
+                    {
+                     "hits":"20"
+                    },
+                 "type":"skeleton_mage",
+                 "width":0,
+                 "x":896,
+                 "y":195
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "width":32,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "height":24,
          "name":"Zones",
          "objects":[
                 {
@@ -154,6 +191,21 @@
          "imagewidth":320,
          "margin":0,
          "name":"inside",
+         "properties":
+            {
+
+            },
+         "spacing":0,
+         "tileheight":32,
+         "tilewidth":32
+        }, 
+        {
+         "firstgid":317,
+         "image":"..\/images\/creatures\/mob_tiles.png",
+         "imageheight":128,
+         "imagewidth":128,
+         "margin":0,
+         "name":"mob_tiles",
          "properties":
             {
 

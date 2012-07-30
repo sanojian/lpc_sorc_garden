@@ -1131,19 +1131,28 @@ function doCraftyInitialization() {
 		Crafty.e("2D, DOM, Text").attr({ w: 100, h: 20, x: VIEW_WIDTH/2 - 55, y: VIEW_HEIGHT/2-60 })
 			.text("Loading")
 			.css({ "text-align": "center", "font-family": GAME_FONT, "font-size": "44px" });
-		Crafty.e("2D, DOM, Text").attr({ w: 120, h: 20, x: VIEW_WIDTH/2 - 60, y: VIEW_HEIGHT/2 })
-			.text("move - w a s d")
-			.css({ "text-align": "center", "font-family": GAME_FONT, "font-size": "16px" });
-		Crafty.e("2D, DOM, Text").attr({ w: 120, h: 20, x: VIEW_WIDTH/2 - 60, y: VIEW_HEIGHT/2 + 30 })
-			.text("attack - p")
-			.css({ "text-align": "center", "font-family": GAME_FONT, "font-size": "16px" });
+		Crafty.e("2D, DOM, Text").attr({ w: 100, h: 20, x: VIEW_WIDTH/2 - 55, y: VIEW_HEIGHT/2 })
+			.text("Sorcerer's Garden")
+			.css({ "text-align": "center", "font-family": GAME_FONT, "font-size": "44px" });
+		//Crafty.e("2D, DOM, Text").attr({ w: 120, h: 20, x: VIEW_WIDTH/2 - 60, y: VIEW_HEIGHT/2 })
+		//	.text("move - w a s d")
+		//	.css({ "text-align": "center", "font-family": GAME_FONT, "font-size": "16px" });
+		//Crafty.e("2D, DOM, Text").attr({ w: 120, h: 20, x: VIEW_WIDTH/2 - 60, y: VIEW_HEIGHT/2 + 30 })
+		//	.text("attack - p")
+		//	.css({ "text-align": "center", "font-family": GAME_FONT, "font-size": "16px" });
 			
 		Crafty.load([	"./images/characters/male_walkcycle.png"], function() {
-			Crafty.sprite(64, "./images/characters/male_walkcycle.png", {
-				player: [0, 0]
+			Crafty.sprite(64, "./images/characters/hero.png", {
+				player: [0, 2]
 			});
 			Crafty.sprite(64, "./images/characters/BODY_skeleton.png", {
-				skeleton: [0, 0]
+				skeleton: [0, 2]
+			});
+			Crafty.sprite(64, "./images/characters/skeleton_2.png", {
+				skeleton_2: [0, 2]
+			});
+			Crafty.sprite(64, "./images/characters/skeleton_mage.png", {
+				skeleton_mage: [0, 2]
 			});
 			Crafty.sprite(64, "./images/spells/firelion_up_64.png", {
 				fire_explosion: [0, 0]
