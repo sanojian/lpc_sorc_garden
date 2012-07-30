@@ -55,6 +55,10 @@ var SPELLS = {
 	icestorm: { type: 'aoe', category: 'water', damage: 1, duration: 3000, effect: 'slow', amount: 1 },
 	earthquake: { type: 'aoe', category: 'earth', damage: 1, duration: 3000, effect: 'root', amount: 1 },
 	windstorm: { type: 'aoe', category: 'wind', damage: 1, duration: 3000, effect: 'push', amount: 1 },
+	fireshield: { type: 'shield', category: 'fire', damage: 2, heal: 1, duration: 10000, amount: 1 },
+	iceshield: { type: 'shield', category: 'water', damage: 1, heal: 1, effect: 'slow', duration: 10000, amount: 1 },
+	earthshield: { type: 'shield', category: 'earth', damage: 1, heal: 2, duration: 2000, amount: 1 },
+	windshield: { type: 'shield', category: 'wind', damage: 1, heal: 1, effect: 'push', duration: 10000, amount: 1 },
 	
 };
 
@@ -78,14 +82,14 @@ var g_playerProps = {
 	backpack: [],
 	pestleSlots: [],
 	//spells: new Array(8),
-	spells: [	{ type: 'spell', name: 'electrobolt', count: 10 },
+	spells: [	{ type: 'spell', name: 'stonecast', count: 10 },
+				{ type: 'spell', name: 'electrobolt', count: 10 },
 				{ type: 'spell', name: 'iceball', count: 10 },
-				{ type: 'spell', name: 'stonecast', count: 10 },
 				{ type: 'spell', name: 'fireball', count: 10 },
-				{ type: 'spell', name: 'firestorm', count: 10 },
-				{ type: 'spell', name: 'icestorm', count: 10 },
-				{ type: 'spell', name: 'windstorm', count: 10 },
-				{ type: 'spell', name: 'earthquake', count: 10 }
+				{ type: 'spell', name: 'fireshield', count: 10 },
+				{ type: 'spell', name: 'iceshield', count: 10 },
+				{ type: 'spell', name: 'earthshield', count: 10 },
+				{ type: 'spell', name: 'windshield', count: 10 }
 			],
 	selectedSpell: 1,
 };
@@ -212,6 +216,20 @@ window.onload = function() {
 					
 				aoe.start(SPELLS[spell.name]);
 				setTimeout(function() { aoe.destroy(); }, SPELLS[spell.name].duration);
+			}
+			else if (SPELLS[spell.name].type == 'shield') {
+				var shield = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, Shield_Spell, ' + spell.name)
+					.attr( { x: g_elPlayer.x + 64/2 - 128/2, y: g_elPlayer.y + 64/2 - 128/2, z: g_elPlayer.z } )
+					.Shield_Spell()
+					.collision();
+				
+				shield.start(SPELLS[spell.name]);
+				if (g_elPlayer.shield)
+					g_elPlayer.shield.destroy();
+				g_elPlayer.shield = shield;
+				g_elPlayer.changeHealth(SPELLS[spell.name].heal);
+				g_elPlayer.shield.delay(function() { g_elPlayer.shield = undefined; shield.destroy(); }, SPELLS[spell.name].duration);
+				
 			}
 			
 			spell.count -= 1;
@@ -383,6 +401,30 @@ window.onload = function() {
 	SPELL_EFFECTS.wind_aoe = { elements: [], counter: 0 };
 	g_hud.icon_windstorm.gameProps = {};
 	g_hud.setSpells.push(g_hud.icon_windstorm);
+	// FIRESHIELD
+	g_hud.icon_fireshield = g_hud.raphPaper.image('./images/ui/spells/fireshield.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
+							.attr( { title: 'fireshield' } );
+	SPELL_EFFECTS.fire_shield = { elements: [], counter: 0 };
+	g_hud.icon_fireshield.gameProps = {};
+	g_hud.setSpells.push(g_hud.icon_fireshield);
+	// ICESHIELD
+	g_hud.icon_iceshield = g_hud.raphPaper.image('./images/ui/spells/iceshield.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
+							.attr( { title: 'iceshield' } );
+	SPELL_EFFECTS.ice_shield = { elements: [], counter: 0 };
+	g_hud.icon_iceshield.gameProps = {};
+	g_hud.setSpells.push(g_hud.icon_iceshield);
+	// EARTHSHIELD
+	g_hud.icon_earthshield = g_hud.raphPaper.image('./images/ui/spells/earthshield.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
+							.attr( { title: 'earthshield' } );
+	SPELL_EFFECTS.earth_shield = { elements: [], counter: 0 };
+	g_hud.icon_earthshield.gameProps = {};
+	g_hud.setSpells.push(g_hud.icon_earthshield);
+	// WINDSHIELD
+	g_hud.icon_windshield = g_hud.raphPaper.image('./images/ui/spells/windshield.png', g_hud.spellBackground.attrs.x + 64*1, g_hud.spellBackground.attrs.y, 64, 64)
+							.attr( { title: 'windshield' } );
+	SPELL_EFFECTS.wind_shield = { elements: [], counter: 0 };
+	g_hud.icon_windshield.gameProps = {};
+	g_hud.setSpells.push(g_hud.icon_windshield);
 
 	g_hud.setSpells.hide();
 	
@@ -631,6 +673,23 @@ function doCraftyInitialization() {
 		}
 	});
 
+	Crafty.c('Shield_Spell', {
+	
+		Shield_Spell: function() {
+			this.requires("SpriteAnimation, Grid, Delay")
+			.animate("explode", [[0,0],[1,0],[2,0],[3,0],[0,1],[1,1],[2,1],[3,1],[0,2],[1,2],[2,2],[3,2]])
+			
+			return this;
+		},
+		start: function(spell) {
+			this.animate('explode', 20, 0);
+			Crafty.audio.play(spell.category + '_explosion');
+			this.spell = spell;
+			var self = this;
+			this.delay( function() { self.sprite(3,2); }, 800);
+		}
+	});
+
 	Crafty.c('AOE_Spell', {
 	
 		AOE_Spell: function() {
@@ -719,7 +778,7 @@ function doCraftyInitialization() {
 					return;
 				var xDiff = g_elPlayer.x - this.x - (this.w - g_elPlayer.w)/2;
 				var yDiff = g_elPlayer.y - this.y - 3*(this.h - g_elPlayer.h)/4;
-				if (Math.abs(xDiff) < 340 && Math.abs(yDiff) < 340) {
+				if (this.aggro || (Math.abs(xDiff) < 340 && Math.abs(yDiff) < 340)) {
 					var direction = { x: xDiff ? Math.abs(xDiff) / (xDiff) : 0, y: yDiff ? Math.abs(yDiff) / (yDiff) : 0 };
 					this.trigger("NewDirection", { x: xDiff, y: yDiff } );
 					this.x += direction.x * this.topSpeed;
@@ -737,6 +796,10 @@ function doCraftyInitialization() {
 					this.lastAttack = dNow;
 					var self = this;
 					setTimeout( function() { self.bAttacking = false; }, 1000);
+					if (g_elPlayer.shield) {
+						self.changeHealth(0 - g_elPlayer.shield.spell.damage);
+						self.applySpellEffect(g_elPlayer.shield.spell.effect);
+					}
 				}
 			
 			})
@@ -758,6 +821,7 @@ function doCraftyInitialization() {
 			return this;
 		},
 		changeHealth: function(amt) {
+			this.aggro = true;
 			this.hitpoints = parseInt(this.hitpoints, 10) + amt;
 			showDamage(amt, this, '#f00');
 			if (this.hitpoints <= 0) {
@@ -932,6 +996,9 @@ function doCraftyInitialization() {
 					this.attr({x: from.x, y:from.y});
 				}
 				this.attr( { z: 5 + Math.max(0,2 + (this.y + this.h)) * 10 });
+				if (this.shield) 
+					this.shield.attr( { x: this.x + this.w/2 - this.shield.w/2, y: this.y + this.h/2 - this.shield.h/2, z: this.z } );
+					
 				//if (this._frameCount % 2 == 1) {	// speedup
 					Crafty.viewport.x = VIEW_WIDTH/2 - this.x - this.w/2;
 					Crafty.viewport.y = VIEW_HEIGHT/2 - this.y - this.h/2;
@@ -1109,7 +1176,17 @@ function doCraftyInitialization() {
 				stonecast: [2,0],
 				electrobolt: [3,0]
 			});
-			Crafty.sprite(16, "./images/spells/iceball.png", {
+			Crafty.sprite(128, "./images/spells/shield_fire.png", {
+				fireshield: [0, 0]
+			});
+			Crafty.sprite(128, "./images/spells/shield_water.png", {
+				iceshield: [0, 0]
+			});
+			Crafty.sprite(128, "./images/spells/shield_earth.png", {
+				earthshield: [0, 0]
+			});
+			Crafty.sprite(128, "./images/spells/shield_wind.png", {
+				windshield: [0, 0]
 			});
 			
 			Crafty.audio.add('fire_bolt', './audio/fire_bolt.wav');
