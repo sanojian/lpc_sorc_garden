@@ -73,7 +73,8 @@ var GAME_PROPS = {
 	LAYER_ZONES: 		'Zones',
 	LAYER_AREAS: 		'Areas',
 	LAYER_MOBS: 		'MOBs',
-	PLANT_TYPES: 		[ 'tomato', 'potato', 'carrot', 'artichoke', 'pepper', 'zuchini', 'corn' ],
+	LAYER_OBJECTS: 		'Objects',
+	PLANT_TYPES: 		[ 'tomato', 'potato', 'carrot', 'artichoke', 'pepper', 'zuchini', 'corn', 'mushroom1', 'mushroom2', 'mushroom3' ],
 	BACKPACK_SLOTS:		10,
 	MAX_SPELLS:			8,
 	MAX_HEALTH:			5
@@ -655,7 +656,12 @@ function doCraftyInitialization() {
 		
 			this.requires("SpriteAnimation, Grid, Collision")
 			.collision()
-			.bind("EnterFrame", function() {
+
+			return this;
+		
+		},
+		grow: function() {
+			this.bind("EnterFrame", function() {
 				var prevAge = this.age;
 				this.age = Math.min(4, Math.floor(this.frameCount / 60));
 				if (prevAge != this.age && this.age > 0) {
@@ -667,9 +673,6 @@ function doCraftyInitialization() {
 				
 				this.frameCount++;
 			})
-
-			return this;
-		
 		}
 	});
 
@@ -966,7 +969,8 @@ function doCraftyInitialization() {
 						var y = (this.y + 3*this.h/4) - (this.y + 3*this.h/4) % (TILE_SIZE*2) - TILE_SIZE;
 						Crafty.e('2D, ' + RENDERING_MODE + ', Plant, plant')
 							.attr( { x: x, y: y, z: 2 } )
-							.Plant(Math.floor(Math.random()*7));
+							.Plant(Math.floor(Math.random()*7))
+							.grow();
 						Crafty.audio.play('dig');
 
 					}
@@ -1055,6 +1059,18 @@ function doCraftyInitialization() {
 								.Badguy(mobinfo.properties.hits);
 				
 				}
+			}
+			else if (data.layers[i].name == GAME_PROPS.LAYER_OBJECTS) {
+				for (var j=0;j<data.layers[i].objects.length;j++) {
+					var mobinfo = data.layers[i].objects[j];
+					
+					var plant = Crafty.e('2D, ' + RENDERING_MODE + ', Plant, ' + mobinfo.type)
+									.attr( { x: mobinfo.x, y: mobinfo.y, z: 5 + Math.max(0,2 + (this.y + this.h)) * 10 } )
+									.Plant(GAME_PROPS.PLANT_TYPES.indexOf(mobinfo.type));
+					plant.bMature = true;
+									
+				}
+			
 			}
 			else if (data.layers[i].name == GAME_PROPS.LAYER_ZONES) {
 				for (var j=0;j<data.layers[i].objects.length;j++) {
@@ -1153,6 +1169,11 @@ function doCraftyInitialization() {
 			});
 			Crafty.sprite(64, "./images/characters/skeleton_mage.png", {
 				skeleton_mage: [0, 2]
+			});
+			Crafty.sprite(32, "./images/outdoors/mushrooms.png", {
+				mushroom1: [0, 0],
+				mushroom2: [1, 0],
+				mushroom3: [2, 0]
 			});
 			Crafty.sprite(64, "./images/spells/firelion_up_64.png", {
 				fire_explosion: [0, 0]

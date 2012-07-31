@@ -7697,7 +7697,7 @@
    <tile gid="29"/>
    <tile gid="29"/>
    <tile gid="30"/>
-   <tile gid="0"/>
+   <tile gid="247"/>
    <tile gid="223"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -16921,7 +16921,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="247"/>
+   <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -23174,5 +23174,9 @@
     <property name="hits" value="1"/>
    </properties>
   </object>
+ </objectgroup>
+ <objectgroup name="Objects" width="96" height="48">
+  <object name="shroon" type="mushroom1" gid="485" x="2539" y="1145"/>
+  <object name="shroon" type="mushroom1" gid="485" x="2588" y="1305"/>
  </objectgroup>
 </map>
