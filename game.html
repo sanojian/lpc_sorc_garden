@@ -83,15 +83,15 @@ var g_playerProps = {
 	backpack: [],
 	pestleSlots: [],
 	//spells: new Array(8),
-	spells: [	{ type: 'spell', name: 'stonecast', count: 10 } ],
-				/*{ type: 'spell', name: 'electrobolt', count: 10 },
-				{ type: 'spell', name: 'iceball', count: 10 },
-				{ type: 'spell', name: 'fireball', count: 10 },
-				{ type: 'spell', name: 'fireshield', count: 10 },
-				{ type: 'spell', name: 'iceshield', count: 10 },
-				{ type: 'spell', name: 'earthshield', count: 10 },
-				{ type: 'spell', name: 'windshield', count: 10 }
-			],*/
+	spells: [	{ type: 'spell', name: 'stonecast', count: 10, power:0 }, 
+				{ type: 'spell', name: 'electrobolt', count: 10, power:0 },
+				{ type: 'spell', name: 'iceball', count: 10, power:0 },
+				{ type: 'spell', name: 'fireball', count: 10, power:0 },
+				{ type: 'spell', name: 'firestorm', count: 10, power:3 },
+				{ type: 'spell', name: 'iceshield', count: 10, power:0 },
+				{ type: 'spell', name: 'earthshield', count: 10, power:0 },
+				{ type: 'spell', name: 'windshield', count: 10, power:0 }
+			],
 	selectedSpell: 1,
 };
 
@@ -163,7 +163,7 @@ function moveBoltSpell(bolt, spell, frames, angle) {
 		effect.attr( { x: hitGuys[0].obj.x, y: hitGuys[0].obj.y, z: bolt.z })
 			.explode(spell.category);
 		hitGuys[0].obj.applySpellEffect(spell.effect);
-		hitGuys[0].obj.changeHealth(0-spell.damage);
+		hitGuys[0].obj.changeHealth(0 - spell.damage * Math.pow(2, bolt.power));
 		bolt.destroy();
 		return;
 	}
@@ -202,6 +202,7 @@ window.onload = function() {
 					.attr( { x: g_elPlayer.x + 64/2, y: g_elPlayer.y + 64/2, z: g_elPlayer.z } )
 					.collision();
 					
+				bolt.power = spell.power;
 				var dx = craftyX- 16/2 - bolt.x;
 				var dy = craftyY - 16/2 - bolt.y;
 				var angle = Math.atan2(dy, dx);
@@ -212,7 +213,7 @@ window.onload = function() {
 			else if (SPELLS[spell.name].type == 'aoe') {
 				var aoe = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, AOE_Spell, ' + spell.name)
 					.attr( { x: craftyX - 128/2, y: craftyY - 128/2, z: g_elPlayer.z } )
-					.AOE_Spell()
+					.AOE_Spell(spell.power)
 					.collision();
 					
 				aoe.start(SPELLS[spell.name]);
@@ -221,14 +222,14 @@ window.onload = function() {
 			else if (SPELLS[spell.name].type == 'shield') {
 				var shield = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, Shield_Spell, ' + spell.name)
 					.attr( { x: g_elPlayer.x + 64/2 - 128/2, y: g_elPlayer.y + 64/2 - 128/2, z: g_elPlayer.z } )
-					.Shield_Spell()
+					.Shield_Spell(spell.power)
 					.collision();
 				
 				shield.start(SPELLS[spell.name]);
 				if (g_elPlayer.shield)
 					g_elPlayer.shield.destroy();
 				g_elPlayer.shield = shield;
-				g_elPlayer.changeHealth(SPELLS[spell.name].heal);
+				g_elPlayer.changeHealth(SPELLS[spell.name].heal * Math.pow(2, spell.power));
 				g_elPlayer.shield.delay(function() { g_elPlayer.shield = undefined; shield.destroy(); }, SPELLS[spell.name].duration);
 				
 			}
@@ -470,7 +471,7 @@ function showHelpText() {
 
 function mixSpells() {
 
-	var spell = {};
+	var spell = { power: 0 };
 
 	for (var i=0;i<3;i++) {
 		var item = g_playerProps.pestleSlots[i];
@@ -490,6 +491,12 @@ function mixSpells() {
 				spell.type = 'bolt';
 			else if (item.plantType == 'corn')
 				spell.type = 'aoe';
+			else if (item.plantType == 'mushroom1')
+				spell.power = '1';
+			else if (item.plantType == 'mushroom2')
+				spell.power = '2';
+			else if (item.plantType == 'mushroom3')
+				spell.power = '3';
 
 			g_playerProps.pestleSlots[i].count--;
 			if (g_playerProps.pestleSlots[i].count <= 0) {
@@ -515,6 +522,7 @@ function mixSpells() {
 					g_hud.spellBling.animate( { cx: g_hud.spellBackground.attrs.x + 64 * (i + 1.5), cy: g_hud.spellBackground.attrs.y + 64/2 }, 600, '<>',
 						function() {
 							g_playerProps.spells[i].count+= item.amount;
+							g_playerProps.spells[i].power = Math.max(spell.power, g_playerProps.spells[i].power);
 							g_hud.spellBling.attr( { opacity: 0 });
 						});
 					
@@ -528,7 +536,7 @@ function mixSpells() {
 					g_hud.spellBling.toFront();
 					g_hud.spellBling.animate( { cx: g_hud.spellBackground.attrs.x + 64 * (i + 1.5), cy: g_hud.spellBackground.attrs.y + 64/2 }, 600, '<>',
 						function() {
-							g_playerProps.spells[i] = { type: 'spell', name: name, count: item.amount }
+							g_playerProps.spells[i] = { type: 'spell', name: name, count: item.amount, power: spell.power }
 							g_hud.spellBling.attr( { opacity: 0 });
 						});
 					return;
@@ -677,11 +685,13 @@ function doCraftyInitialization() {
 	});
 
 	Crafty.c('Shield_Spell', {
+		power: 0,
 	
-		Shield_Spell: function() {
+		Shield_Spell: function(pow) {
 			this.requires("SpriteAnimation, Grid, Delay")
 			.animate("explode", [[0,0],[1,0],[2,0],[3,0],[0,1],[1,1],[2,1],[3,1],[0,2],[1,2],[2,2],[3,2]])
 			
+			this.power = pow;
 			return this;
 		},
 		start: function(spell) {
@@ -694,11 +704,13 @@ function doCraftyInitialization() {
 	});
 
 	Crafty.c('AOE_Spell', {
+		power: 0,
 	
-		AOE_Spell: function() {
+		AOE_Spell: function(pow) {
 			this.requires("SpriteAnimation, Grid")
 			.animate("explode", 0,0,5)
 			
+			this.power = pow;
 			return this;
 		},
 		start: function(spell) {
@@ -715,7 +727,7 @@ function doCraftyInitialization() {
 			var objHit = this.hit('damagable');
 			for (var i=0;i<objHit.length;i++) {
 				objHit[i].obj.applySpellEffect(spell.effect);
-				objHit[i].obj.changeHealth(0-spell.damage);
+				objHit[i].obj.changeHealth(0 - spell.damage * Math.pow(2, this.power));
 			}
 			
 		}
@@ -800,7 +812,7 @@ function doCraftyInitialization() {
 					var self = this;
 					setTimeout( function() { self.bAttacking = false; }, 1000);
 					if (g_elPlayer.shield) {
-						self.changeHealth(0 - g_elPlayer.shield.spell.damage);
+						self.changeHealth(0 - g_elPlayer.shield.spell.damage * Math.pow(2, g_elPlayer.shield.power));
 						self.applySpellEffect(g_elPlayer.shield.spell.effect);
 					}
 				}
@@ -1043,10 +1055,11 @@ function doCraftyInitialization() {
 		var startY = 0;
 		
 		var data = g_map;
+		var bgcolor = data.properties.bgcolor || '2F8136';
 		// background for the scene
 		Crafty.e('2D, ' + RENDERING_MODE)
 			.attr( { x: 0, y: 0, w: data.width * TILE_SIZE, h: data.height * TILE_SIZE })
-			.css('background-color', '#2F8136');
+			.css('background-color', '#' + bgcolor);
 			
 		for (var i=0;i<data.layers.length;i++) {
 			if (data.layers[i].name == GAME_PROPS.LAYER_MOBS) {
@@ -1054,7 +1067,7 @@ function doCraftyInitialization() {
 					var mobinfo = data.layers[i].objects[j];
 					
 					var mob = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, Badguy, ' + mobinfo.type)
-								.attr( { x: mobinfo.x, y: mobinfo.y, z: 5 + Math.max(0,2 + (this.y + this.h)) * 10 } )
+								.attr( { x: mobinfo.x, y: mobinfo.y, z: 5 + Math.max(0,2 + (mobinfo.y + 64)) * 10 } )
 								.collision()
 								.Badguy(mobinfo.properties.hits);
 				
@@ -1085,9 +1098,17 @@ function doCraftyInitialization() {
 							startX = elZone.x + elZone.w/2 - (g_elPlayer ? g_elPlayer.w/2 : 0);
 							startY = elZone.y + 1.3*elZone.h;
 						}
-						if (zone.type == 'S') {
+						else if (zone.type == 'S') {
 							startX = elZone.x + elZone.w/2 - (g_elPlayer ? g_elPlayer.w/2 : 0);
 							startY = elZone.y - (g_elPlayer ? g_elPlayer.h * 1.5 : 0);
+						}
+						else if (zone.type == 'E') {
+							startX = elZone.x - (g_elPlayer ? g_elPlayer.h * 1.5 : 0);
+							startY = elZone.y + elZone.h/2;
+						}
+						else if (zone.type == 'W') {
+							startX = elZone.x + elZone.w + (g_elPlayer ? g_elPlayer.h * 1.5 : 0);
+							startY = elZone.y + elZone.h/2;
 						}
 					}
 				}
@@ -1238,6 +1259,7 @@ function doCraftyInitialization() {
 			Crafty.audio.add('music_churchyard', './audio/music/Avgvst - Byzantine (loop)_0.mp3');
 			Crafty.audio.add('music_home', './audio/music/flora.ogg');
 			Crafty.audio.add('music_church', './audio/music/fauna.ogg');
+			Crafty.audio.add('music_church_dungeon', './audio/music/fauna.ogg');
 
 			
 			loadMap('river');
