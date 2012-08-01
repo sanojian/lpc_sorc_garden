@@ -173,4 +173,11 @@ AVW
 ~~~~~~~~
 
  - flora.ogg
+ 
+FONTS
+
+Gustavo Dipre
+~~~~~~~~~~~~~
+
+ - Gorditas (Google Web Font)
 
