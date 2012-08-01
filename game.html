@@ -82,8 +82,8 @@ var GAME_PROPS = {
 var g_playerProps = {
 	backpack: [],
 	pestleSlots: [],
-	//spells: new Array(8),
-	spells: [	{ type: 'spell', name: 'stonecast', count: 10, power:0 }, 
+	spells: new Array(8),
+	/*spells: [	{ type: 'spell', name: 'stonecast', count: 10, power:0 },
 				{ type: 'spell', name: 'electrobolt', count: 10, power:0 },
 				{ type: 'spell', name: 'iceball', count: 10, power:0 },
 				{ type: 'spell', name: 'fireball', count: 10, power:0 },
@@ -91,10 +91,10 @@ var g_playerProps = {
 				{ type: 'spell', name: 'iceshield', count: 10, power:0 },
 				{ type: 'spell', name: 'earthshield', count: 10, power:0 },
 				{ type: 'spell', name: 'windshield', count: 10, power:0 }
-			],
+			],*/
 	selectedSpell: 1,
 };
-
+g_playerProps.spells[0] = { type: 'spell', name: 'stonecast', count: 10, power:0 };
 
 var g_map;
 var g_strZoneFrom = 'churchyard';
@@ -163,7 +163,7 @@ function moveBoltSpell(bolt, spell, frames, angle) {
 		effect.attr( { x: hitGuys[0].obj.x, y: hitGuys[0].obj.y, z: bolt.z })
 			.explode(spell.category);
 		hitGuys[0].obj.applySpellEffect(spell.effect);
-		hitGuys[0].obj.changeHealth(0 - spell.damage * Math.pow(2, bolt.power));
+		hitGuys[0].obj.trigger('ChangeHealth',(0 - spell.damage * Math.pow(2, bolt.power)));
 		bolt.destroy();
 		return;
 	}
@@ -229,7 +229,7 @@ window.onload = function() {
 				if (g_elPlayer.shield)
 					g_elPlayer.shield.destroy();
 				g_elPlayer.shield = shield;
-				g_elPlayer.changeHealth(SPELLS[spell.name].heal * Math.pow(2, spell.power));
+				g_elPlayer.trigger('ChangeHealth',(SPELLS[spell.name].heal * Math.pow(2, spell.power)));
 				g_elPlayer.shield.delay(function() { g_elPlayer.shield = undefined; shield.destroy(); }, SPELLS[spell.name].duration);
 				
 			}
@@ -727,7 +727,7 @@ function doCraftyInitialization() {
 			var objHit = this.hit('damagable');
 			for (var i=0;i<objHit.length;i++) {
 				objHit[i].obj.applySpellEffect(spell.effect);
-				objHit[i].obj.changeHealth(0 - spell.damage * Math.pow(2, this.power));
+				objHit[i].obj.trigger('ChangeHealth', (0 - spell.damage * Math.pow(2, this.power)));
 			}
 			
 		}
@@ -764,6 +764,7 @@ function doCraftyInitialization() {
 			.animate("walk_right", 0, 1, 1)
 			.animate("walk_up", 0, 1, 1)
 			.animate("walk_down", 0, 0, 1)
+			.animate("death", [[0,2],[1,2],[2,2],[3,2],[4,2],[0,3],[1,3],[2,3],[3,3],[4,3]])
 			.unbind("EnterFrame")
 			.unbind("NewDirection")
 			.bind("NewDirection", function (direction) {
@@ -790,19 +791,62 @@ function doCraftyInitialization() {
 					this._lastDirection.y = direction.y;
 				}
 			})
+			.unbind("EnterFrame")
+			.bind("EnterFrame", function () {
+				if (this.bAttacking)
+					return;
+				var xDiff = g_elPlayer.x - this.x - (this.w - g_elPlayer.w)/2;
+				var yDiff = g_elPlayer.y - this.y - 3*(this.h - g_elPlayer.h)/4;
+				if (this.aggro || (Math.abs(xDiff) < 340 && Math.abs(yDiff) < 340)) {
+					var direction = { x: xDiff ? Math.abs(xDiff) / (xDiff) : 0, y: yDiff ? Math.abs(yDiff) / (yDiff) : 0 };
+					this.trigger("NewDirection", { x: xDiff, y: yDiff } );
+					this.x += direction.x * this.topSpeed;
+					this.y += direction.y * this.topSpeed;
+					this.trigger("Moved", { x: this.x - direction.x * this.topSpeed, y: this.y - direction.y * this.topSpeed } );
+				}
+				else
+					this.stop();
+					
+				var dNow = (new Date()).getTime();	
+				if (dNow - this.lastAttack >= this.attackSpeed && Math.abs(xDiff) < 32 && Math.abs(yDiff) < 32) {
+					// attack!
+					this.bAttacking = true;
+					g_elPlayer.trigger('ChangeHealth', (-2));
+					this.lastAttack = dNow;
+					var self = this;
+					setTimeout( function() { self.bAttacking = false; }, 1000);
+					if (g_elPlayer.shield) {
+						self.trigger('ChangeHealth', (0 - g_elPlayer.shield.spell.damage * Math.pow(2, g_elPlayer.shield.power)));
+						self.applySpellEffect(g_elPlayer.shield.spell.effect);
+					}
+				}
+			
+			})
+			.unbind('ChangeHealth')
+			.bind('ChangeHealth', function(amt) {
+				this.aggro = true;
+				this.hitpoints = parseInt(this.hitpoints, 10) + amt;
+				showDamage(amt, this, '#f00');
+				if (this.hitpoints <= 0) {
+					this.unbind('EnterFrame');
+					this.animate('death', 120, 0);
+					Crafty.audio.stop();
+					Crafty.audio.play('boss_dead');
+					var self = this;
+					setTimeout(function() { 
+						self.destroy(); 
+						Crafty.audio.play('win_music');
+						Crafty.pause();
+						var txtWin = g_hud.raphPaper.text(VIEW_WIDTH/2,VIEW_HEIGHT/2, 'You saved the village!')
+										.attr( { "font-family": GAME_FONT, "font-size": 10, stroke: "#ffff00" } );
+						txtWin.animate( { 'font-size': 52 }, 2000, 'elastic'); 
+					}, 3500);
+				}
+			})
 			
 			return this;
 		},
-			
-		changeHealth: function(amt) {
-			this.aggro = true;
-			this.hitpoints = parseInt(this.hitpoints, 10) + amt;
-			showDamage(amt, this, '#f00');
-			if (this.hitpoints <= 0) {
-				this.destroy();
-			}
-		}
-		
+					
 	});
 
 	Crafty.c('Badguy', {
@@ -864,12 +908,12 @@ function doCraftyInitialization() {
 				if (dNow - this.lastAttack >= this.attackSpeed && Math.abs(xDiff) < 32 && Math.abs(yDiff) < 32) {
 					// attack!
 					this.bAttacking = true;
-					g_elPlayer.changeHealth(-1);
+					g_elPlayer.trigger('ChangeHealth', (-1));
 					this.lastAttack = dNow;
 					var self = this;
 					setTimeout( function() { self.bAttacking = false; }, 1000);
 					if (g_elPlayer.shield) {
-						self.changeHealth(0 - g_elPlayer.shield.spell.damage * Math.pow(2, g_elPlayer.shield.power));
+						self.trigger('ChangeHealth', (0 - g_elPlayer.shield.spell.damage * Math.pow(2, g_elPlayer.shield.power)));
 						self.applySpellEffect(g_elPlayer.shield.spell.effect);
 					}
 				}
@@ -889,18 +933,18 @@ function doCraftyInitialization() {
 				}
 				this.attr( { z: 5 + Math.max(0,2 + (this.y + this.h)) * 10 });
 			})
+			.bind('ChangeHealth', function(amt) {
+				this.aggro = true;
+				this.hitpoints = parseInt(this.hitpoints, 10) + amt;
+				showDamage(amt, this, '#f00');
+				if (this.hitpoints <= 0) {
+					this.destroy();
+				}
+			})
 			
 			this.hitpoints = hits;
 			
 			return this;
-		},
-		changeHealth: function(amt) {
-			this.aggro = true;
-			this.hitpoints = parseInt(this.hitpoints, 10) + amt;
-			showDamage(amt, this, '#f00');
-			if (this.hitpoints <= 0) {
-				this.destroy();
-			}
 		},
 		applySpellEffect: function(effect) {
 			if (effect == 'slow')
@@ -1080,27 +1124,27 @@ function doCraftyInitialization() {
 				//}
 				this._frameCount++;
 				
-			});
+			})
+			.bind('ChangeHealth', function(amt) {
+				if (this.health <= 0)
+					return;		// already dead
+				this.health = Math.max(0, Math.min(GAME_PROPS.MAX_HEALTH, this.health + amt));
+				showDamage(amt, this, (amt > 0 ? '#0f0' : '#f00'));
+				
+				if (amt < 0)
+					Crafty.audio.play('hit_hurt');
+
+				updateHealthUI(this.health);
+				if (this.health <= 0) {
+					// dead!
+					g_strZoneFrom = 'river';
+					loadMap('home');
+					this.health = 2;
+					updateHealthUI(this.health);
+				}
+			})
 
 			return this;
-		},
-		changeHealth: function(amt) {
-			if (this.health <= 0)
-				return;		// already dead
-			this.health = Math.max(0, Math.min(GAME_PROPS.MAX_HEALTH, this.health + amt));
-			showDamage(amt, this, (amt > 0 ? '#0f0' : '#f00'));
-			
-			if (amt < 0)
-				Crafty.audio.play('hit_hurt');
-
-			updateHealthUI(this.health);
-			if (this.health <= 0) {
-				// dead!
-				g_strZoneFrom = 'river';
-				loadMap('home');
-				this.health = 2;
-				updateHealthUI(this.health);
-			}
 		},
 		applySpellEffect: function(amt) {
 			return;
@@ -1319,17 +1363,21 @@ function doCraftyInitialization() {
 			Crafty.audio.add('earth_explosion', './audio/earth_explosion.wav');
 			Crafty.audio.add('wind_explosion', './audio/wind_explosion.wav');
 
+			Crafty.audio.add('boss_dead', './audio/boss_dead.wav');
+			Crafty.audio.add('win_music', './audio/win_music_2.wav');
+			
 			Crafty.audio.add('mix_spell', './audio/mix_spell.wav');
 			Crafty.audio.add('mix_fail', './audio/mix_fail.wav');
 			Crafty.audio.add('hit_hurt', './audio/Hit_Hurt5.wav');
 			Crafty.audio.add('dig', './audio/dig.wav');
 			Crafty.audio.add('pick', './audio/pick.wav');
 
-			Crafty.audio.add('music_river', './audio/music/Crystal Dungeon v1_0.mp3');
-			Crafty.audio.add('music_churchyard', './audio/music/Avgvst - Byzantine (loop)_0.mp3');
+			Crafty.audio.add('music_river', './audio/music/Crystal_Dungeon_v1_0.mp3');
+			Crafty.audio.add('music_churchyard', './audio/music/Avgvst_-_Byzantine_(loop)_0.mp3');
 			Crafty.audio.add('music_home', './audio/music/flora.ogg');
 			Crafty.audio.add('music_church', './audio/music/fauna.ogg');
 			Crafty.audio.add('music_church_dungeon', './audio/music/fauna.ogg');
+			Crafty.audio.add('music_town', './audio/music/fauna.ogg');
 
 			
 			loadMap('river');
