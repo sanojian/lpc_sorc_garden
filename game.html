@@ -157,7 +157,7 @@ function moveBoltSpell(bolt, spell, frames, angle) {
 		bolt.destroy();
 		return;
 	}
-	var hitGuys = bolt.hit('Badguy');
+	var hitGuys = bolt.hit('damagable');
 	if (hitGuys) {
 		var effect = getNextEffect(spell.category + '_explosion', 'Explosion');
 		effect.attr( { x: hitGuys[0].obj.x, y: hitGuys[0].obj.y, z: bolt.z })
@@ -200,7 +200,7 @@ window.onload = function() {
 				
 				var bolt = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, ' + spell.name)
 					.attr( { x: g_elPlayer.x + 64/2, y: g_elPlayer.y + 64/2, z: g_elPlayer.z } )
-					.collision();
+					.collision(new Crafty.polygon([0,0],[0,16],[16,16],[16,0]));
 					
 				bolt.power = spell.power;
 				var dx = craftyX- 16/2 - bolt.x;
@@ -214,7 +214,7 @@ window.onload = function() {
 				var aoe = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, AOE_Spell, ' + spell.name)
 					.attr( { x: craftyX - 128/2, y: craftyY - 128/2, z: g_elPlayer.z } )
 					.AOE_Spell(spell.power)
-					.collision();
+					.collision(new Crafty.polygon([0,0],[0,128],[128,128],[128,0]));
 					
 				aoe.start(SPELLS[spell.name]);
 				setTimeout(function() { aoe.destroy(); }, SPELLS[spell.name].duration);
@@ -748,6 +748,63 @@ function doCraftyInitialization() {
 		}
 	});	
 	
+	Crafty.c('Boss', {
+		_frameCount: 0,
+		_lastDirection: { x: 1, y: 0 },
+		topSpeed: 2,
+		hitpoints: 1,
+		lastAttack: 0,
+		bAttacking: false,
+		attackSpeed: 2000,
+
+		Boss: function(hits) {
+			this.requires("Badguy")
+			.Badguy(hits)
+			.animate("walk_left", 0, 0, 1)
+			.animate("walk_right", 0, 1, 1)
+			.animate("walk_up", 0, 1, 1)
+			.animate("walk_down", 0, 0, 1)
+			.unbind("EnterFrame")
+			.unbind("NewDirection")
+			.bind("NewDirection", function (direction) {
+				if (direction.x < this.topSpeed) {
+					if (!this.isPlaying("walk_left"))
+						this.stop().animate("walk_left", 10, -1);
+				}
+				else if (direction.x > this.topSpeed) {
+					if (!this.isPlaying("walk_right"))
+						this.stop().animate("walk_right", 10, -1);
+				}
+				else if (direction.y < 0 && Math.abs(direction.y) > this.topSpeed) {
+					if (!this.isPlaying("walk_up"))
+						this.stop().animate("walk_up", 10, -1);
+				}
+				else if (direction.y > 0 && Math.abs(direction.y) > this.topSpeed) {
+					if (!this.isPlaying("walk_down"))
+						this.stop().animate("walk_down", 10, -1);
+				}
+				if (direction.x == 0 && direction.y == 0)
+					this.stop();
+				else {
+					this._lastDirection.x = direction.x;
+					this._lastDirection.y = direction.y;
+				}
+			})
+			
+			return this;
+		},
+			
+		changeHealth: function(amt) {
+			this.aggro = true;
+			this.hitpoints = parseInt(this.hitpoints, 10) + amt;
+			showDamage(amt, this, '#f00');
+			if (this.hitpoints <= 0) {
+				this.destroy();
+			}
+		}
+		
+	});
+
 	Crafty.c('Badguy', {
 		_frameCount: 0,
 		_lastDirection: { x: 1, y: 0 },
@@ -759,7 +816,7 @@ function doCraftyInitialization() {
 
 		Badguy: function(hits) {
 			this.requires("SpriteAnimation, Grid, Collision, damagable")
-			.collision()//new Crafty.polygon([20,48],[44,48],[44,64],[20,64]))
+			.collision(new Crafty.polygon([0,0],[64,0],[64,64],[0,64]))
 			.animate("walk_left", 0, 1, 8)
 			.animate("walk_right", 0, 3, 8)
 			.animate("walk_up", 0, 0, 8)
@@ -820,8 +877,10 @@ function doCraftyInitialization() {
 			})
 			.bind('Moved', function(from) {
 				var solids = this.hit('solid');
-				if (false) {//solids && solids[0].normal) {
-					this.attr({x: this.x - solids[0].normal.x, y: this.y - solids[0].normal.y });
+				if (solids && solids[0].normal) {
+					//this.attr({ x: this.x - solids[0].normal.x * this.topSpeed, y: this.y - solids[0].normal.y * this.topSpeed });
+					this.x += Math.ceil(solids[0].normal.x * -solids[0].overlap);
+					this.y += Math.ceil(solids[0].normal.y * -solids[0].overlap);
 					return;
 				}
 				else if (solids) {
@@ -876,7 +935,7 @@ function doCraftyInitialization() {
 		health: GAME_PROPS.MAX_HEALTH,
 
 		Player: function() {
-			this.requires("SpriteAnimation, damagable, Grid, Multiway, Collision")
+			this.requires("SpriteAnimation, Grid, Multiway, Collision")
 			.collision(new Crafty.polygon([20,48],[44,48],[44,64],[20,64]))
 			.animate("walk_left", 0, 1, 8)
 			.animate("walk_right", 0, 3, 8)
@@ -1042,6 +1101,9 @@ function doCraftyInitialization() {
 				this.health = 2;
 				updateHealthUI(this.health);
 			}
+		},
+		applySpellEffect: function(amt) {
+			return;
 		}
 	
 	});
@@ -1066,9 +1128,14 @@ function doCraftyInitialization() {
 				for (var j=0;j<data.layers[i].objects.length;j++) {
 					var mobinfo = data.layers[i].objects[j];
 					
-					var mob = Crafty.e('2D, ' + RENDERING_MODE + ', Collision, Badguy, ' + mobinfo.type)
+					if (mobinfo.type == 'gnu_boss') 
+						Crafty.e('2D, ' + RENDERING_MODE + ', Boss, ' + mobinfo.type)
+								.attr( { x: mobinfo.x, y: mobinfo.y, z: 5 + Math.max(0,2 + (mobinfo.y + 96)) * 10 } )
+								.Boss(mobinfo.properties.hits);
+					
+					else
+						Crafty.e('2D, ' + RENDERING_MODE + ', Collision, Badguy, ' + mobinfo.type)
 								.attr( { x: mobinfo.x, y: mobinfo.y, z: 5 + Math.max(0,2 + (mobinfo.y + 64)) * 10 } )
-								.collision()
 								.Badguy(mobinfo.properties.hits);
 				
 				}
@@ -1104,11 +1171,11 @@ function doCraftyInitialization() {
 						}
 						else if (zone.type == 'E') {
 							startX = elZone.x - (g_elPlayer ? g_elPlayer.h * 1.5 : 0);
-							startY = elZone.y + elZone.h/2;
+							startY = elZone.y + elZone.h/2 - (g_elPlayer ? g_elPlayer.h * 3/4 : 0);
 						}
 						else if (zone.type == 'W') {
 							startX = elZone.x + elZone.w + (g_elPlayer ? g_elPlayer.h * 1.5 : 0);
-							startY = elZone.y + elZone.h/2;
+							startY = elZone.y + elZone.h/2 - (g_elPlayer ? g_elPlayer.h * 3/4 : 0);
 						}
 					}
 				}
@@ -1137,7 +1204,7 @@ function doCraftyInitialization() {
 							if (data.layers[i].name == GAME_PROPS.LAYER_IMPASSIBLE) {
 								el.addComponent('Collision');
 								el.addComponent('solid');
-								//el.collision();//new Crafty.polygon([0,0],[data.tilewidth,0],[data.tilewidth,data.tileheight],[0,data.tileheight]));
+								el.collision(new Crafty.polygon([0,0],[data.tilewidth,0],[data.tilewidth,data.tileheight],[0,data.tileheight]));
 							}
 						}
 					}
@@ -1190,6 +1257,9 @@ function doCraftyInitialization() {
 			});
 			Crafty.sprite(64, "./images/characters/skeleton_mage.png", {
 				skeleton_mage: [0, 2]
+			});
+			Crafty.sprite(96, "./images/creatures/gnu_boss.png", {
+				gnu_boss: [0, 0]
 			});
 			Crafty.sprite(32, "./images/outdoors/mushrooms.png", {
 				mushroom1: [0, 0],
