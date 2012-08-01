@@ -1,0 +1,176 @@
+Code authors
+============
+
+This program was written by the following people:
+ - Jonas Olmstead (AKA Sanojian)
+
+
+Asset attribution
+=================
+
+Assets were authored by the following people:
+
+Lanea Zimmerman (AKA Sharm)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ - barrel.png
+ - brackish.png
+ - buckets.png
+ - bridges.png
+ - cabinets.png
+ - cement.png
+ - cementstair.png
+ - chests.png
+ - country.png
+ - cup.png
+ - dirt2.png
+ - dirt.png
+ - dungeon.png
+ - grassalt.png
+ - grass.png
+ - holek.png
+ - holemid.png
+ - hole.png
+ - house.png
+ - inside.png
+ - kitchen.png
+ - mountains.png
+ - rock.png
+ - shadow.png
+ - signs.png
+ - stairs.png
+ - treetop.png
+ - trunk.png
+ - waterfall.png
+ - watergrass.png
+ - water.png
+ 
+
+Stephen Challener (AKA Redshrike)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ - female_walkcycle.png
+ - female_hurt.png
+ - female_slash.png
+ - female_spellcast.png
+ - male_walkcycle.png
+ - male_hurt.png
+ - male_slash.png
+ - male_spellcast.png
+ - male_pants.png
+ - male_hurt_pants.png
+ - male_fall_down_pants.png
+ - male_slash_pants.png
+
+
+Manuel Riecke (AKA MrBeast)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ - hairfemale.png
+ - hairmale.png
+
+Ben Potter
+~~~~~~~~~~
+
+ -  gnu_boss.png
+ 
+Casper Nillson
+~~~~~~~~~~~~~~
+
+ - gravestones.png
+ - wheelbarrows.png
+
+Chris Phillips
+~~~~~~~~~~~~~~
+
+ - CPhillips--whitheredtree.png
+
+Daniel Eddeland
+~~~~~~~~~~~~~~~
+
+ - scrollsandblocks.png
+ - lightningclaw.png
+ - tornado.png
+ - firelion_down.png
+ - icetacle.png
+ - spikes.png
+ - iceshield.png
+ - plowed_soil.png
+ - plants.png
+ - farming_fishing.png
+ - fence_alt.png
+ - fence.png
+ 
+Dethe Elza
+~~~~~~~~~~
+ 
+ - black_pants_in_walking_animation.png
+ - brown_pants_in_walking_animation.png
+ - black_shirt_in_walking_animation.png
+ - sword_in_walking_animation.png
+
+Guido Bos
+~~~~~~~~~
+ 
+ - contest-art.png
+ - flowers.png
+
+Johann Charlot
+~~~~~~~~~~~~~~
+
+ -  tileset01.png
+ 
+Johannes Sjolund
+~~~~~~~~~~~~~~~~
+
+ - HEAD_robe_hood.png
+ - HEAD_chain_armor_hood.png
+ - HEAD_chain_armor_helmet.png
+ - BELT_rope.png
+ - TORSO_robe_shirt_brown.png
+ - LEGS_robe_skirt.png
+ 
+Lori Angela
+~~~~~~~~~~~
+
+ - mushrooms1.png
+ 
+Luke Mehl
+~~~~~~~~~
+
+ - female_mage_brownhair.png
+ 
+Skyler Robert Colladay
+~~~~~~~~~~~~~~~~~~~~~~
+
+ - crpyt.png
+ 
+ 
+ 
+Music
+
+remaxim
+~~~~~~~
+
+ - win_music_2.wav
+ 
+FoxSynergy
+~~~~~~~~~~
+
+ - Crystal_Dungeon_v1_0.mp3
+ 
+avgvst
+~~~~~~
+
+ - Avgvst_-_Byzantine (loop)_0.mp3
+ 
+AVW
+~~~
+
+ - fauna.ogg
+ 
+Écrivain
+~~~~~~~~
+
+ - flora.ogg
+
